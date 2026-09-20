@@ -15,3 +15,10 @@ def test_kamila_initialization():
     assert kam.max_iter == 25
     assert kam.cat_bandwidth == 0.025
     assert kam.random_state is None
+
+
+def test_kamila_cpp_extension():
+    """Verify nanobind C++ extension is compiled and importable."""
+    from kamila import _kamila_cpp
+
+    assert _kamila_cpp.get_cpp_version() >= 1
