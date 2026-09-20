@@ -19,6 +19,23 @@ dependencies = [
   "joblib>=1.2",
 ]
 
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+]
+
+[project.urls]
+Homepage = "https://github.com/ahfoss/scikit-kamila"
+Issues = "https://github.com/ahfoss/scikit-kamila/issues"
+
 [project.optional-dependencies]
 test = [
   "pytest>=7.0",
@@ -56,22 +73,6 @@ dev = [
   "matplotlib>=3.5",
   "pillow>=9.0",
 ]
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "License :: OSI Approved :: BSD License",
-    "Operating System :: POSIX",
-    "Operating System :: Unix",
-    "Operating System :: MacOS",
-    "Operating System :: Microsoft :: Windows",
-]
-
-[project.urls]
-Homepage = "https://github.com/ahfoss/scikit-kamila"
-Issues = "https://github.com/ahfoss/scikit-kamila/issues"
 
 [tool.setuptools_scm]
 version_file = "kamila/_version.py"
