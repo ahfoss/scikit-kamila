@@ -41,7 +41,20 @@ doc = [
   "pillow>=9.0",
 ]
 dev = [
-  "kamila[test,lint,doc]",
+  "pytest>=7.0",
+  "pytest-cov>=4.0",
+  "pandas>=1.4",
+  "black>=23.3.0",
+  "ruff>=0.4.0",
+  "pre-commit>=3.0",
+  "sphinx>=7.0",
+  "sphinx-gallery>=0.15",
+  "pydata-sphinx-theme>=0.15",
+  "numpydoc>=1.6",
+  "sphinx-design>=0.5",
+  "sphinx-prompt>=1.5",
+  "matplotlib>=3.5",
+  "pillow>=9.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -62,6 +75,7 @@ Issues = "https://github.com/ahfoss/scikit-kamila/issues"
 
 [tool.setuptools_scm]
 version_file = "kamila/_version.py"
+fallback_version = "0.1.0.dev0"
 
 [tool.pixi.project]
 channels = ["conda-forge"]

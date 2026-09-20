@@ -28,7 +28,7 @@ jobs:
       - name: Install documentation dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e .[doc]
+          python -m pip install -e ".[doc]"
 
       - name: Build documentation with Sphinx
         run: |
