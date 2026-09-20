@@ -1,6 +1,8 @@
 # scikit-kamila
 
 [![tests](https://github.com/ahfoss/scikit-kamila/actions/workflows/tests.yml/badge.svg)](https://github.com/ahfoss/scikit-kamila/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/ahfoss/scikit-kamila/branch/main/graph/badge.svg)](https://codecov.io/gh/ahfoss/scikit-kamila)
+[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](https://github.com/ahfoss/scikit-kamila)
 [![doc](https://github.com/ahfoss/scikit-kamila/actions/workflows/docs.yml/badge.svg)](https://ahfoss.github.io/scikit-kamila)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
