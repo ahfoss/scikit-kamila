@@ -182,5 +182,25 @@ ignore=[
 "doc/_templates/numpydoc_docstring.py"=["F821", "W292"]
 
 [tool.pytest.ini_options]
+testpaths = ["kamila"]
+norecursedirs = ["doc", "examples", "scripts", ".git", "build", "dist"]
 addopts = "--doctest-modules --color=yes"
 doctest_optionflags = "NORMALIZE_WHITESPACE"
+
+[tool.coverage.run]
+source = ["kamila"]
+omit = [
+    "*/tests/*",
+    "*_version.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "except ImportError:",
+    "if __name__ == .__main__.:",
+]
+show_missing = true
+precision = 2
+fail_under = 100

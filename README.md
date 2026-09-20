@@ -21,7 +21,20 @@ from kamila import KamilaClustering
 kamila = KamilaClustering(n_clusters=2, random_state=42)
 ```
 
+## Development & Contributing
+
+### Code Coverage Requirement
+All pull requests and contributions must maintain **100% test code coverage**. Continuous integration enforces this requirement via automated test workflows across Python 3.9 through 3.15.
+
+To run the test suite and verify 100% coverage locally:
+
+```bash
+# Run pytest with missing line reporting and 100% threshold enforcement
+python -m pytest --cov=kamila --cov-report=term-missing --cov-fail-under=100
+```
+
 ## References
 
 - Foss A, Markatou M. (2018). *kamila: Clustering Mixed-Type Data in R and Hadoop*. Journal of Statistical Software, 83(13), 1–45. doi: [10.18637/jss.v083.i13](https://doi.org/10.18637/jss.v083.i13).
 - Original R package: [ahfoss/kamila](https://github.com/ahfoss/kamila).
+
