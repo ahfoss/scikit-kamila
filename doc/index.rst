@@ -5,19 +5,19 @@
 
 :notoc:
 
-#############################################
-Project template for `scikit-learn` extension
-#############################################
+###########################################
+scikit-kamila: KAMILA Clustering in Python
+###########################################
 
 **Date**: |today| **Version**: |version|
 
 **Useful links**:
 `Source Repository <https://github.com/ahfoss/scikit-kamila>`__ |
-`Issues & Ideas <https://github.com/ahfoss/scikit-kamilak/issues>`__ |
+`Issues & Ideas <https://github.com/ahfoss/scikit-kamila/issues>`__
 
-This is the documentation for the `scikit-kamila` to help at extending
-`scikit-learn`. It provides some information on how to build your own custom
-`scikit-learn` compatible estimators as well as a template to package them.
+scikit-kamila is a scikit-learn compatible Python package implementing the
+KAMILA (KAy-means for MIxed LArge datasets) clustering algorithm for mixed continuous
+and categorical data.
 
 
 .. grid:: 1 2 2 2

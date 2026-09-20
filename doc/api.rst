@@ -4,36 +4,18 @@
 API Reference
 #############
 
-This is an example on how to document the API of your own project.
+This is the class and function reference for ``kamila``.
 
 .. currentmodule:: kamila
 
-Estimator
-=========
+Clustering
+==========
 
 .. autosummary::
    :toctree: generated/
    :template: class.rst
 
-   TemplateEstimator
-
-Transformer
-===========
-
-.. autosummary::
-   :toctree: generated/
-   :template: class.rst
-
-   TemplateTransformer
-
-Predictor
-=========
-
-.. autosummary::
-   :toctree: generated/
-   :template: class.rst
-
-    TemplateClassifier
+   KamilaClustering
 
 
 Utilities
@@ -41,7 +23,7 @@ Utilities
 
 .. autosummary::
    :toctree: generated/
-   :template: functions.rst
+   :template: function.rst
 
      utils.discovery.all_estimators
      utils.discovery.all_displays

@@ -1,18 +1,27 @@
-scikit-kamila - A template for scikit-learn contributions
-============================================================
+# scikit-kamila
 
-![tests](https://github.com/ahfoss/scikit-kamila/actions/workflows/python-app.yml/badge.svg)
-[![codecov](https://codecov.io/gh/ahfoss/scikit-kamila/graph/badge.svg?token=L0XPWwoPLw)](https://codecov.io/gh/ahfoss/scikit-kamila)
-![doc](https://github.com/ahfoss/scikit-kamila/actions/workflows/deploy-gh-pages.yml/badge.svg)
+[![tests](https://github.com/ahfoss/scikit-kamila/actions/workflows/python-app.yml/badge.svg)](https://github.com/ahfoss/scikit-kamila/actions/workflows/python-app.yml)
+[![doc](https://github.com/ahfoss/scikit-kamila/actions/workflows/deploy-gh-pages.yml/badge.svg)](https://ahfoss.github.io/scikit-kamila)
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
-**scikit-kamila** is a template project for [scikit-learn](https://scikit-learn.org)
-compatible extensions.
+**scikit-kamila** is a scikit-learn-compatible Python package implementing **KAMILA** (KAy-means for MIxed LArge datasets), an iterative clustering algorithm designed for mixed-type data (combinations of continuous and categorical variables).
 
-It aids development of estimators that can be used in scikit-learn pipelines and
-(hyper)parameter search, while facilitating testing (including some API compliance),
-documentation, open source development, packaging, and continuous integration.
+## Installation
 
-Refer to the documentation to modify the template for your own scikit-learn
-contribution: https://contrib.scikit-learn.org/scikit-kamila
+```bash
+pip install kamila
+```
 
-*Thank you for cleanly contributing to the scikit-learn ecosystem!*
+## Quick Start
+
+```python
+from kamila import KamilaClustering
+
+# Initialize the estimator
+kamila = KamilaClustering(n_clusters=2, random_state=42)
+```
+
+## References
+
+- Foss A, Markatou M. (2018). *kamila: Clustering Mixed-Type Data in R and Hadoop*. Journal of Statistical Software, 83(13), 1–45. doi: [10.18637/jss.v083.i13](https://doi.org/10.18637/jss.v083.i13).
+- Original R package: [ahfoss/kamila](https://github.com/ahfoss/kamila).
