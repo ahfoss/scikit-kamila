@@ -5,8 +5,6 @@
 # License: BSD 3 clause
 
 from ._kamila import KamilaClustering
-from ._modha_spangler import ModhaSpanglerClustering
-from .datasets import make_mixed_data
 
 try:
     from ._version import __version__
@@ -15,7 +13,5 @@ except ImportError:
 
 __all__ = [
     "KamilaClustering",
-    "ModhaSpanglerClustering",
-    "make_mixed_data",
     "__version__",
 ]
