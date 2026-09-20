@@ -11,7 +11,7 @@ import sys
 from importlib.metadata import version as get_version
 
 project = "scikit-kamila"
-copyright = "2026, Alexander Foss"
+copyright = "2026, Alexander Foss and Marianthi Markatou"
 author = "Alexander Foss"
 release = get_version("kamila")
 version = ".".join(release.split(".")[:3])
@@ -59,16 +59,14 @@ html_sidebars = {
 html_theme_options = {
     "external_links": [],
     "github_url": "https://github.com/ahfoss/scikit-kamila",
-    # "twitter_url": "https://twitter.com/pandas_dev",
     "use_edit_page_button": True,
     "show_toc_level": 1,
-    # "navbar_align": "right",  # For testing that the navbar items align properly
 }
 
 html_context = {
-    "github_user": "scikit-learn-contrib",
+    "github_user": "ahfoss",
     "github_repo": "scikit-kamila",
-    "github_version": "master",
+    "github_version": "main",
     "doc_path": "doc",
 }
 

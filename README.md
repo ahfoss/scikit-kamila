@@ -1,7 +1,7 @@
 # scikit-kamila
 
-[![tests](https://github.com/ahfoss/scikit-kamila/actions/workflows/python-app.yml/badge.svg)](https://github.com/ahfoss/scikit-kamila/actions/workflows/python-app.yml)
-[![doc](https://github.com/ahfoss/scikit-kamila/actions/workflows/deploy-gh-pages.yml/badge.svg)](https://ahfoss.github.io/scikit-kamila)
+[![tests](https://github.com/ahfoss/scikit-kamila/actions/workflows/tests.yml/badge.svg)](https://github.com/ahfoss/scikit-kamila/actions/workflows/tests.yml)
+[![doc](https://github.com/ahfoss/scikit-kamila/actions/workflows/docs.yml/badge.svg)](https://ahfoss.github.io/scikit-kamila)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 **scikit-kamila** is a scikit-learn-compatible Python package implementing **KAMILA** (KAy-means for MIxed LArge datasets), an iterative clustering algorithm designed for mixed-type data (combinations of continuous and categorical variables).

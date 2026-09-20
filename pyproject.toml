@@ -7,7 +7,7 @@ name = "kamila"
 dynamic = ["version"]
 authors = [
   { name="Alexander Foss", email="alexanderhfoss@gmail.com" },
-  { name="Marianthi Markatou", email="alexanderhfoss@gmail.com" },
+  { name="Marianthi Markatou"},
 ]
 description = "Clustering Mixed-Type Data in Python and scikit-learn (KAMILA)"
 readme = "README.md"
