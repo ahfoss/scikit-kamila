@@ -8,7 +8,7 @@ from kamila import KamilaClustering
 
 
 def test_kamila_initialization():
-    """Verify that KamilaClustering can be instantiated with default and custom params."""
+    """Verify KamilaClustering can be instantiated with default and custom params."""
     kam = KamilaClustering()
     assert kam.n_clusters == 2
     assert kam.n_init == 10

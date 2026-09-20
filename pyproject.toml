@@ -9,7 +9,7 @@ authors = [
   { name="Alexander Foss", email="alexanderhfoss@gmail.com" },
   { name="Marianthi Markatou", email="alexanderhfoss@gmail.com" },
 ]
-description = "Clustering Mixed-Type Data in Python and scikit-learn (KAMILA & Modha-Spangler)"
+description = "Clustering Mixed-Type Data in Python and scikit-learn (KAMILA)"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -17,6 +17,31 @@ dependencies = [
   "scipy>=1.8",
   "scikit-learn>=1.4.2",
   "joblib>=1.2",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest>=7.0",
+  "pytest-cov>=4.0",
+  "pandas>=1.4",
+]
+lint = [
+  "black>=23.3.0",
+  "ruff>=0.4.0",
+  "pre-commit>=3.0",
+]
+doc = [
+  "sphinx>=7.0",
+  "sphinx-gallery>=0.15",
+  "pydata-sphinx-theme>=0.15",
+  "numpydoc>=1.6",
+  "sphinx-design>=0.5",
+  "sphinx-prompt>=1.5",
+  "matplotlib>=3.5",
+  "pillow>=9.0",
+]
+dev = [
+  "kamila[test,lint,doc]",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

@@ -68,9 +68,7 @@ def all_estimators(type_filter=None):
     # Ignore deprecation warnings triggered at import time and from walking
     # packages
     with ignore_warnings(category=FutureWarning):
-        for _, module_name, _ in pkgutil.walk_packages(
-            path=[root], prefix="kamila."
-        ):
+        for _, module_name, _ in pkgutil.walk_packages(path=[root], prefix="kamila."):
             module_parts = module_name.split(".")
             if any(part in _MODULE_TO_IGNORE for part in module_parts):
                 continue
@@ -87,7 +85,11 @@ def all_estimators(type_filter=None):
     estimators = [
         c
         for c in all_classes
-        if (issubclass(c[1], BaseEstimator) and c[0] != "BaseEstimator" and c[1].__module__.startswith("kamila"))
+        if (
+            issubclass(c[1], BaseEstimator)
+            and c[0] != "BaseEstimator"
+            and c[1].__module__.startswith("kamila")
+        )
     ]
     # get rid of abstract base classes
     estimators = [c for c in estimators if not is_abstract(c[1])]
@@ -144,9 +146,7 @@ def all_displays():
     # Ignore deprecation warnings triggered at import time and from walking
     # packages
     with ignore_warnings(category=FutureWarning):
-        for _, module_name, _ in pkgutil.walk_packages(
-            path=[root], prefix="kamila."
-        ):
+        for _, module_name, _ in pkgutil.walk_packages(path=[root], prefix="kamila."):
             module_parts = module_name.split(".")
             if any(part in _MODULE_TO_IGNORE for part in module_parts):
                 continue
@@ -195,9 +195,7 @@ def all_functions():
     # Ignore deprecation warnings triggered at import time and from walking
     # packages
     with ignore_warnings(category=FutureWarning):
-        for _, module_name, _ in pkgutil.walk_packages(
-            path=[root], prefix="kamila."
-        ):
+        for _, module_name, _ in pkgutil.walk_packages(path=[root], prefix="kamila."):
             module_parts = module_name.split(".")
             if any(part in _MODULE_TO_IGNORE for part in module_parts):
                 continue

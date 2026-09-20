@@ -13,7 +13,7 @@ from importlib.metadata import version as get_version
 project = "scikit-kamila"
 copyright = "2026, Alexander Foss"
 author = "Alexander Foss"
-release = get_version('kamila')
+release = get_version("kamila")
 version = ".".join(release.split(".")[:3])
 
 # -- General configuration ---------------------------------------------------

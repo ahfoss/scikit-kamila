@@ -10,6 +10,7 @@ A minimal example demonstrating how to instantiate and use ``KamilaClustering``.
 # License: BSD 3 clause
 
 import numpy as np
+
 from kamila import KamilaClustering
 
 # Create a toy dataset with continuous features
