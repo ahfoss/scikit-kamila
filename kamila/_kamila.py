@@ -65,9 +65,9 @@ class KamilaClustering(BaseEstimator, ClusterMixin):
         Number of iterations run in the best initialization.
     n_features_in_ : int
         Number of features seen during :meth:`fit`.
-    feature_names_in_ : ndarray of shape (n_features_in_,)
+    feature_names_in_ : ndarray of shape (n_features,)
         Names of features seen during :meth:`fit` (if X had feature names).
-    is_categorical_ : ndarray of shape (n_features_in_,) of bool
+    is_categorical_ : ndarray of shape (n_features,) of bool
         Boolean mask indicating which features are categorical.
     categories_ : list of ndarray
         The categories / levels present in each categorical feature during :meth:`fit`.

@@ -20,35 +20,18 @@ KAMILA (KAy-means for MIxed LArge datasets) clustering algorithm for mixed conti
 and categorical data.
 
 
-.. grid:: 1 2 2 2
+.. grid:: 1 2 3 3
     :gutter: 4
     :padding: 2 2 0 0
     :class-container: sd-text-center
 
-    .. grid-item-card:: Getting started
-        :img-top: _static/img/index_getting_started.svg
-        :class-card: intro-card
-        :shadow: md
-
-        Information regarding this template and how to modify it for your own project.
-
-        +++
-
-        .. button-ref:: quick_start
-            :ref-type: ref
-            :click-parent:
-            :color: secondary
-            :expand:
-
-            To the getting started guideline
-
-    .. grid-item-card::  User guide
+    .. grid-item-card:: User guide
         :img-top: _static/img/index_user_guide.svg
         :class-card: intro-card
         :shadow: md
 
-        An example of narrative documentation. Here, we will explain how to create your
-        own `scikit-learn` estimator.
+        The narrative documentation explaining the KAMILA algorithm, how mixed continuous
+        and categorical data are modeled, parameter choices, and usage.
 
         +++
 
@@ -60,13 +43,13 @@ and categorical data.
 
             To the user guide
 
-    .. grid-item-card::  API reference
+    .. grid-item-card:: API reference
         :img-top: _static/img/index_api.svg
         :class-card: intro-card
         :shadow: md
 
-        An example of API documentation. This is an example how to use `sphinx` to
-        automatically generate reference API page.
+        Detailed descriptions of the ``KamilaClustering`` estimator, its parameters,
+        fitted attributes, methods, and utility discovery functions.
 
         +++
 
@@ -78,13 +61,13 @@ and categorical data.
 
             To the reference guide
 
-    .. grid-item-card::  Examples
+    .. grid-item-card:: Examples
         :img-top: _static/img/index_examples.svg
         :class-card: intro-card
         :shadow: md
 
-        A set of examples. It complements the User Guide and it is the right place to
-        show how to use your compatible estimator.
+        A gallery of examples showcasing clustering of mixed continuous and
+        categorical datasets with ``scikit-kamila``.
 
         +++
 
@@ -102,7 +85,6 @@ and categorical data.
     :hidden:
     :titlesonly:
 
-    quick_start
     user_guide
     api
     auto_examples/index
