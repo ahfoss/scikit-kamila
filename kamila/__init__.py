@@ -1,4 +1,5 @@
 """kamila: Clustering Mixed-Type Data in Python and Scikit-Learn."""
+
 from ._kamila import KamilaClustering
 
 try:
