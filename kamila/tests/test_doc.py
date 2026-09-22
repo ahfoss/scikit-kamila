@@ -1,8 +1,5 @@
 """Unit test for Sphinx documentation build."""
 
-# Authors: Alexander Foss <alexanderhfoss@gmail.com>
-# License: BSD 3 clause
-
 from pathlib import Path
 
 import pytest

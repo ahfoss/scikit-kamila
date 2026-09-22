@@ -1,9 +1,4 @@
 """kamila: Clustering Mixed-Type Data in Python and Scikit-Learn."""
-
-# Authors: Alexander Foss <alexanderhfoss@gmail.com>
-#          Marianthi Markatou <markatou@buffalo.edu>
-# License: BSD 3 clause
-
 from ._kamila import KamilaClustering
 
 try:

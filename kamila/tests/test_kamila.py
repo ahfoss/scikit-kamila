@@ -1,9 +1,5 @@
 """Tests for KamilaClustering estimator and R reference data parity."""
 
-# Authors: Alexander Foss <alexanderhfoss@gmail.com>
-#          Marianthi Markatou <markatou@buffalo.edu>
-# License: BSD 3 clause
-
 import json
 from pathlib import Path
 

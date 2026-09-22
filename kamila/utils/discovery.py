@@ -3,10 +3,6 @@ The :mod:`kamila.utils.discovery` module includes utilities to discover
 objects (i.e. estimators, displays, functions) from the `kamila` package.
 """
 
-# Adapted from scikit-learn
-# Authors: scikit-learn-contrib developers
-# License: BSD 3 clause
-
 import inspect
 import pkgutil
 from importlib import import_module
