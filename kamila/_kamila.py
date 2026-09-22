@@ -32,7 +32,8 @@ class KamilaClustering(BaseEstimator, ClusterMixin):
         Number of times the algorithm will be run with different centroid seeds.
         The final results will be the best output of n_init runs in terms of objective.
     max_iter : int, default=25
-        Maximum number of iterations of the KAMILA algorithm for a single run/initialization.
+        Maximum number of iterations of the KAMILA algorithm for a single
+        run/initialization.
     cat_bandwidth : float, default=0.025
         Categorical smoothing parameter between 0 and 1.
     con_weights : array-like of shape (n_con,), optional, default=None
