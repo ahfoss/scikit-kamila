@@ -53,11 +53,9 @@ def test_is_abstract():
         def foo(self):
             pass  # pragma: no cover
 
-
     assert not _is_abstract(ConcreteClass)
     assert not _is_abstract(EmptyAbstract)
     assert _is_abstract(AbstractWithMethods)
-
 
 
 def test_all_displays():
@@ -70,4 +68,3 @@ def test_all_functions():
     assert len(functions) > 0
     func_names = [name for name, _ in functions]
     assert "all_estimators" in func_names
-
