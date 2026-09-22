@@ -558,7 +558,15 @@ def test_validation_errors():
         kam.predict(X)
 
     # Unseen category in predict
-    kam = KamilaClustering(n_clusters=2, categorical_features=[0], random_state=42)
-    kam.fit([["red"], ["blue"]])
+    kam_unseen = KamilaClustering(
+        n_clusters=2, categorical_features=[0], random_state=42
+    )
+    kam_unseen.fit([["red"], ["blue"]])
     with pytest.raises(ValueError, match="Unseen category .*green.* encountered"):
-        kam.predict([["green"]])
+        kam_unseen.predict([["green"]])
+
+    # Mismatched number of features in predict
+    kam_mismatch = KamilaClustering(n_clusters=2, random_state=42)
+    kam_mismatch.fit(X)
+    with pytest.raises(ValueError, match="features, but KamilaClustering is expecting"):
+        kam_mismatch.predict(np.array([[1.0]]))

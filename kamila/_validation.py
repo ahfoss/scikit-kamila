@@ -166,6 +166,11 @@ def _validate_and_split_data(
             n_features=n_features,
             feature_names=detected_feature_names,
         )
+    elif len(is_categorical) != n_features:
+        raise ValueError(
+            f"X has {n_features} features, but KamilaClustering is expecting "
+            f"{len(is_categorical)} features as input."
+        )
 
     con_indices = np.where(~is_categorical)[0]
     cat_indices = np.where(is_categorical)[0]

@@ -51,7 +51,6 @@ html_css_files = [
     "css/scikit-kamila.css",
 ]
 html_sidebars = {
-    "quick_start": [],
     "user_guide": [],
     "auto_examples/index": [],
 }
@@ -100,13 +99,11 @@ intersphinx_mapping = {
 
 # -- Options for sphinx-gallery -----------------------------------------------
 
-# Generate the plot for the gallery
-plot_gallery = True
+plot_gallery = "True"
 
 sphinx_gallery_conf = {
     "doc_module": "kamila",
     "backreferences_dir": os.path.join("generated"),
     "examples_dirs": "../examples",
     "gallery_dirs": "auto_examples",
-    "reference_url": {"kamila": None},
 }

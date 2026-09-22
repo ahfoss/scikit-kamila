@@ -14,7 +14,7 @@ from ._validation import _validate_and_split_data
 
 
 class KamilaClustering(BaseEstimator, ClusterMixin):
-    """KAMILA clustering of mixed-type continuous and categorical data.
+    r"""KAMILA clustering of mixed-type continuous and categorical data.
 
     KAMILA (KAy-means for MIxed LArge datasets) is an iterative clustering technique
     that balances continuous and categorical variable contributions dynamically using
