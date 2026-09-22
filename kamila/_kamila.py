@@ -81,6 +81,8 @@ class KamilaClustering(BaseEstimator, ClusterMixin):
         Minimum continuous distance summary statistic.
     total_dist_ : float or None
         Total combined distance / objective value.
+    fitted_min_dist_ : ndarray of shape (n_samples,) or None
+        Minimum continuous distance from each training observation to fitted cluster centers.
     """
 
     def __init__(
@@ -278,8 +280,14 @@ class KamilaClustering(BaseEstimator, ClusterMixin):
             self.cluster_centers_con_ = np.asarray(
                 best_res["final_means"], dtype=np.float64
             ).reshape((self.n_clusters, n_con))
+            self.fitted_min_dist_ = (
+                np.asarray(best_res["final_min_dist"], dtype=np.float64)
+                if "final_min_dist" in best_res
+                else None
+            )
         else:
             self.cluster_centers_con_ = None
+            self.fitted_min_dist_ = None
 
         if n_cat > 0:
             self.cluster_centers_cat_ = [
@@ -329,6 +337,12 @@ class KamilaClustering(BaseEstimator, ClusterMixin):
         n_con = X_con.shape[1] if X_con is not None else 0
         n_cat = X_cat.shape[1] if X_cat is not None else 0
 
+        min_dist_arr = (
+            np.ascontiguousarray(self.fitted_min_dist_, dtype=np.float64)
+            if self.fitted_min_dist_ is not None
+            else None
+        )
+
         preds = _kamila_cpp.kamila_predict_cpp(
             con_data=X_con,
             cat_data=X_cat,
@@ -340,6 +354,7 @@ class KamilaClustering(BaseEstimator, ClusterMixin):
             cat_weights=cat_wgts,
             fitted_means=self.cluster_centers_con_,
             fitted_log_probs=self.cluster_centers_cat_,
+            all_data_min_dist=min_dist_arr,
             has_con=bool(n_con > 0),
             has_cat=bool(n_cat > 0),
         )
