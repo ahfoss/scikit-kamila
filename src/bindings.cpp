@@ -187,8 +187,6 @@ std::vector<int> kamila_predict_cpp(
         cat_wgts_ptr,
         fitted_means_ptr,
         fitted_log_probs,
-        nullptr,
-        0,
         has_con,
         has_cat
     );

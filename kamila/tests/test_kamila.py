@@ -477,11 +477,11 @@ def test_validation_errors():
     with pytest.raises(ValueError, match="max_iter must be an integer >= 1"):
         KamilaClustering(max_iter=0).fit(X)
 
-    # Invalid cat_bandwidth
+    # Invalid cat_bandwidth (negative)
     with pytest.raises(
-        ValueError, match="cat_bandwidth must be a strictly positive number"
+        ValueError, match="cat_bandwidth must be a non-negative number"
     ):
-        KamilaClustering(cat_bandwidth=0).fit(X)
+        KamilaClustering(cat_bandwidth=-0.5).fit(X)
 
     # Invalid categorical_features string
     with pytest.raises(ValueError, match="categorical_features must be None"):
@@ -570,3 +570,215 @@ def test_validation_errors():
     kam_mismatch.fit(X)
     with pytest.raises(ValueError, match="features, but KamilaClustering is expecting"):
         kam_mismatch.predict(np.array([[1.0]]))
+
+
+# =============================================================================
+# Direct C++ Extension & Algorithmic Branch Tests
+# =============================================================================
+
+
+def test_cpp_bindings_direct_and_types():
+    """Verify _kamila_cpp directly with non-contiguous arrays and Python lists."""
+    # Create non-contiguous (strided) continuous and categorical arrays
+    full_con = np.arange(40, dtype=np.float64).reshape(20, 2)
+    con_data_strided = full_con[::2]  # shape (10, 2), non-contiguous
+    assert not con_data_strided.flags.c_contiguous
+
+    full_cat = np.array([[0, 1], [1, 0]] * 10, dtype=np.int32)
+    cat_data_strided = full_cat[::2]  # shape (10, 2), non-contiguous
+    assert not cat_data_strided.flags.c_contiguous
+
+    con_weights_strided = np.array([1.0, 2.0, 3.0])[::2]  # shape (2,), non-contiguous
+    cat_weights_strided = np.array([1.0, 1.5, 2.0])[::2]  # shape (2,), non-contiguous
+    num_levels = np.array([2, 2], dtype=np.int32)
+
+    init_means = np.array([[0.0, 1.0], [10.0, 11.0]], dtype=np.float64)
+    # Pass init_log_probs as raw nested Python lists (exercising nb::sequence in extract_double_vector)
+    init_log_probs_list = [
+        [[np.log(0.6), np.log(0.4)], [np.log(0.3), np.log(0.7)]],
+        [[np.log(0.5), np.log(0.5)], [np.log(0.2), np.log(0.8)]],
+    ]
+
+    res = _kamila_cpp.kamila_loop_cpp(
+        con_data=con_data_strided,
+        cat_data=cat_data_strided,
+        n_samples=10,
+        n_con=2,
+        n_cat=2,
+        n_clusters=2,
+        con_weights=con_weights_strided,
+        cat_weights=cat_weights_strided,
+        num_levels=num_levels,
+        init_means=init_means,
+        init_log_probs=init_log_probs_list,
+        cat_bw=0.025,
+        max_iter=5,
+        has_con=True,
+        has_cat=True,
+    )
+    assert len(res["final_membership"]) == 10
+    assert not res["degenerate_soln"]
+    assert res["num_iter"] >= 1
+
+    # Predict with direct C++ call and non-contiguous arrays / Python lists
+    preds = _kamila_cpp.kamila_predict_cpp(
+        con_data=con_data_strided,
+        cat_data=cat_data_strided,
+        n_samples=10,
+        n_con=2,
+        n_cat=2,
+        n_clusters=2,
+        con_weights=con_weights_strided,
+        cat_weights=cat_weights_strided,
+        fitted_means=init_means,
+        fitted_log_probs=init_log_probs_list,
+        has_con=True,
+        has_cat=True,
+    )
+    assert len(preds) == 10
+
+
+def test_cpp_cat_bandwidth_zero():
+    """Verify cat_bandwidth=0.0 disables smoothing in C++ categorical update."""
+    X_cat = np.array([["low"], ["low"], ["high"], ["high"]])
+    kam = KamilaClustering(
+        n_clusters=2,
+        categorical_features=[0],
+        cat_bandwidth=0.0,
+        n_init=3,
+        random_state=42,
+    )
+    kam.fit(X_cat)
+    assert kam.labels_.shape == (4,)
+    assert kam.cat_log_lik_ is not None
+
+    # Mixed with cat_bandwidth=0.0
+    X_con = np.array([[1.0], [1.1], [5.0], [5.1]])
+    X_mixed = np.hstack([X_con, X_cat])
+    kam_mixed = KamilaClustering(
+        n_clusters=2,
+        categorical_features=[1],
+        cat_bandwidth=0.0,
+        n_init=3,
+        random_state=42,
+    )
+    kam_mixed.fit(X_mixed)
+    assert kam_mixed.labels_.shape == (4,)
+
+
+def test_cpp_degenerate_solution():
+    """Verify C++ degenerate solution detection (empty cluster handling)."""
+    # 2 points with 3 clusters and initialization placing center 2 very far away
+    con_data = np.array([[0.0, 0.0], [0.1, 0.1]], dtype=np.float64)
+    init_means = np.array(
+        [[0.0, 0.0], [0.1, 0.1], [1000.0, 1000.0]], dtype=np.float64
+    )
+
+    res = _kamila_cpp.kamila_loop_cpp(
+        con_data=con_data,
+        cat_data=None,
+        n_samples=2,
+        n_con=2,
+        n_cat=0,
+        n_clusters=3,
+        con_weights=np.array([1.0, 1.0], dtype=np.float64),
+        cat_weights=None,
+        num_levels=None,
+        init_means=init_means,
+        init_log_probs=None,
+        cat_bw=0.025,
+        max_iter=5,
+        has_con=True,
+        has_cat=False,
+    )
+    assert res["degenerate_soln"] is True
+    assert res["total_log_lik"] == -float("inf")
+    assert res["objective"] == -float("inf")
+
+    # Categorical-only degenerate solution
+    cat_data = np.array([[0], [0]], dtype=np.int32)
+    # Cluster 2 given log prob 0 for category 1 (which doesn't exist in data)
+    init_lp = [np.array([[-0.1, -2.0], [-0.1, -2.0], [-20.0, 0.0]], dtype=np.float64)]
+    res_cat = _kamila_cpp.kamila_loop_cpp(
+        con_data=None,
+        cat_data=cat_data,
+        n_samples=2,
+        n_con=0,
+        n_cat=1,
+        n_clusters=3,
+        con_weights=None,
+        cat_weights=np.array([1.0], dtype=np.float64),
+        num_levels=np.array([2], dtype=np.int32),
+        init_means=None,
+        init_log_probs=init_lp,
+        cat_bw=0.025,
+        max_iter=5,
+        has_con=False,
+        has_cat=True,
+    )
+    assert res_cat["degenerate_soln"] is True
+    assert res_cat["objective"] == -float("inf")
+
+
+def test_cpp_kde_bandwidth_zero_variance_and_identical_points():
+    """Verify KDE bandwidth fallback paths when data has zero variance / identical points."""
+    # All continuous points identical -> variance = 0, IQR = 0
+    X_con = np.array([[2.0, 3.0]] * 10)
+    kam = KamilaClustering(
+        n_clusters=1,
+        init_means=np.array([[2.0, 3.0]]),
+        max_iter=3,
+    )
+    kam.fit(X_con)
+    assert kam.labels_.shape == (10,)
+    assert kam.n_iter_ >= 1
+    assert np.isfinite(kam.total_log_lik_)
+
+    # Test predict on identical points
+    preds = kam.predict(X_con)
+    np.testing.assert_array_equal(preds, np.zeros(10, dtype=np.int32))
+
+
+def test_cpp_single_cluster_and_single_level():
+    """Verify C++ smoothing and distance calculations with n_clusters=1 and n_levels=1."""
+    X_con = np.array([[1.0], [2.0], [3.0], [4.0]])
+    X_cat = np.array([[0], [0], [0], [0]], dtype=np.int32)  # single level (nlev=1)
+    X = np.hstack([X_con, X_cat])
+
+    kam = KamilaClustering(
+        n_clusters=1,
+        categorical_features=[1],
+        max_iter=3,
+        random_state=42,
+    )
+    kam.fit(X)
+    assert kam.labels_.shape == (4,)
+    np.testing.assert_array_equal(kam.labels_, np.zeros(4, dtype=np.int32))
+    assert kam.cluster_centers_con_ is not None
+    assert kam.cluster_centers_cat_ is not None
+
+    preds = kam.predict(X)
+    np.testing.assert_array_equal(preds, np.zeros(4, dtype=np.int32))
+
+
+def test_cpp_custom_weights():
+    """Verify C++ weighted distance and likelihood routines with custom feature weights."""
+    con_data = np.array([[1.0, 10.0], [2.0, 20.0], [1.1, 10.5], [2.1, 20.5]])
+    cat_data = np.array([["A", "X"], ["B", "Y"], ["A", "X"], ["B", "Y"]])
+    X = np.hstack([con_data, cat_data])
+
+    con_weights = [0.1, 5.0]
+    cat_weights = [2.0, 0.5]
+
+    kam = KamilaClustering(
+        n_clusters=2,
+        categorical_features=[2, 3],
+        con_weights=con_weights,
+        cat_weights=cat_weights,
+        random_state=42,
+    )
+    kam.fit(X)
+    assert kam.labels_.shape == (4,)
+    preds = kam.predict(X)
+    np.testing.assert_array_equal(preds, kam.labels_)
+

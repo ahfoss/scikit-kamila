@@ -498,9 +498,12 @@ KamilaResult kamila_loop(
     // Objective value calculation matching R
     double objective = 0.0;
     if (has_con && has_cat) {
-        double win_to_bet_rat = win_dist / (total_dist - win_dist);
-        if (win_to_bet_rat < 0.0) win_to_bet_rat = 100.0;
-        objective = win_to_bet_rat * cat_log_lik;
+        double denom = total_dist - win_dist;
+        double win_to_bet_rat = (denom > 1e-12) ? (win_dist / denom) : 100.0;
+        if (win_to_bet_rat < 0.0 || std::isnan(win_to_bet_rat) || std::isinf(win_to_bet_rat)) {
+            win_to_bet_rat = 100.0;
+        }
+        objective = (cat_log_lik == 0.0) ? 0.0 : (win_to_bet_rat * cat_log_lik);
     } else if (has_con) {
         objective = total_log_lik;
     } else {
@@ -532,8 +535,6 @@ std::vector<int> kamila_predict(
     const double* cat_weights,
     const double* fitted_means,
     const std::vector<std::vector<double>>& fitted_log_probs,
-    const double* /*all_data_min_dist*/,
-    int /*n_ref_samples*/,
     bool has_con,
     bool has_cat
 ) {

@@ -2,7 +2,8 @@
 
 [![tests](https://github.com/ahfoss/scikit-kamila/actions/workflows/tests.yml/badge.svg)](https://github.com/ahfoss/scikit-kamila/actions/workflows/tests.yml)
 [![codecov](https://codecov.io/gh/ahfoss/scikit-kamila/branch/main/graph/badge.svg)](https://codecov.io/gh/ahfoss/scikit-kamila)
-[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](https://github.com/ahfoss/scikit-kamila)
+[![codecov (c++)](https://codecov.io/gh/ahfoss/scikit-kamila/branch/main/graph/badge.svg?flag=cpp)](https://codecov.io/gh/ahfoss/scikit-kamila)
+[![C++ Coverage](https://img.shields.io/badge/C%2B%2B_Coverage-100%25-brightgreen.svg)](https://github.com/ahfoss/scikit-kamila)
 [![doc](https://github.com/ahfoss/scikit-kamila/actions/workflows/docs.yml/badge.svg)](https://ahfoss.github.io/scikit-kamila)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
@@ -26,13 +27,20 @@ kamila = KamilaClustering(n_clusters=2, random_state=42)
 ## Development & Contributing
 
 ### Code Coverage Requirement
-All pull requests and contributions must maintain **100% test code coverage**. Continuous integration enforces this requirement via automated test workflows across Python 3.9 through 3.15.
+All pull requests and contributions must maintain **100% test code coverage** across both Python and C++ source code. Continuous integration enforces this requirement via automated test workflows across Python 3.9 through 3.15.
 
-To run the test suite and verify 100% coverage locally:
+To run the test suite and verify 100% Python coverage locally:
 
 ```bash
 # Run pytest with missing line reporting and 100% threshold enforcement
 python -m pytest --cov=kamila --cov-report=term-missing --cov-fail-under=100
+```
+
+To run and generate C++ code coverage reports:
+
+```bash
+# Build with coverage and generate C++ report via gcovr or OpenCppCoverage
+python scripts/run_cpp_coverage.py --html --xml
 ```
 
 ## References

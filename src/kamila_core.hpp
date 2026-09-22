@@ -50,8 +50,6 @@ std::vector<int> kamila_predict(
     const double* cat_weights,
     const double* fitted_means,         // K x P_con (row-major)
     const std::vector<std::vector<double>>& fitted_log_probs,
-    const double* all_data_min_dist,    // optional reference minDist for KDE or direct distance lookup
-    int n_ref_samples,
     bool has_con,
     bool has_cat
 );

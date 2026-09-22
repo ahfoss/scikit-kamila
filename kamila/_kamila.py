@@ -126,10 +126,10 @@ class KamilaClustering(BaseEstimator, ClusterMixin):
             )
         if (
             not isinstance(self.cat_bandwidth, (int, float, np.number))
-            or self.cat_bandwidth <= 0
+            or self.cat_bandwidth < 0
         ):
             raise ValueError(
-                "cat_bandwidth must be a strictly positive number; got "
+                "cat_bandwidth must be a non-negative number; got "
                 f"{self.cat_bandwidth!r}."
             )
 
@@ -261,7 +261,9 @@ class KamilaClustering(BaseEstimator, ClusterMixin):
                     has_cat=bool(n_cat > 0),
                 )
 
-                if res["objective"] < best_obj:
+                if best_res is None or (
+                    not np.isnan(res["objective"]) and res["objective"] < best_obj
+                ):
                     best_obj = res["objective"]
                     best_res = res
 
