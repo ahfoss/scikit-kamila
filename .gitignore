@@ -15,8 +15,10 @@ doc/datasets/generated/
 # Distribution / packaging
 
 .Python
+.venv/
 env/
 build/
+coverage_cpp/
 develop-eggs/
 dist/
 downloads/
