@@ -605,7 +605,7 @@ def test_parity_predict_small_mixed_out_of_sample():
     # Out-of-sample test instances with diverse continuous and categorical combinations
     X_test = np.array(
         [
-            [1.5, 2.5, 1, 2],  # Cluster 1 in R classifyKamila (radial KDE + cat log-lik)
+            [1.5, 2.5, 1, 2],  # Cluster 1 (radial KDE + cat log-lik)
             [3.0, 5.0, 0, 0],  # Cluster 0 in R classifyKamila
             [2.8, 4.5, 1, 2],  # Cluster 1 in R classifyKamila
             [5.0, 8.0, 0, 0],  # Cluster 1 in R classifyKamila
@@ -621,7 +621,10 @@ def test_parity_predict_small_mixed_out_of_sample():
     np.testing.assert_array_equal(
         actual_preds,
         expected_preds,
-        err_msg="predict() output does not match R classifyKamila on small mixed test set",
+        err_msg=(
+            "predict() output does not match R classifyKamila on "
+            "small mixed test set"
+        ),
     )
 
 
@@ -666,7 +669,10 @@ def test_parity_predict_medium_mixed_out_of_sample():
     np.testing.assert_array_equal(
         actual_preds,
         expected_preds,
-        err_msg="predict() output does not match R classifyKamila on medium mixed test set",
+        err_msg=(
+            "predict() output does not match R classifyKamila on "
+            "medium mixed test set"
+        ),
     )
 
 
@@ -778,7 +784,9 @@ def test_parity_predict_weighted_features():
 
 
 def test_predict_single_sample_consistency():
-    """Verify predicting on 1 sample array of shape (1, n_features) matches batch output."""
+    """Verify predicting on 1 sample array of shape (1, n_features) matches
+    batch output.
+    """
     data = load_fixture("reference_small_mixed.json")
     con_data = np.asarray(data["con_data"], dtype=np.float64)
     cat_data = np.asarray(data["cat_data"], dtype=np.int32)
@@ -854,5 +862,3 @@ def test_predict_pandas_dataframe():
     # Matches R classifyKamila expected output for these three test points
     expected = np.array([1, 0, 1], dtype=np.int32)
     np.testing.assert_array_equal(preds, expected)
-
-

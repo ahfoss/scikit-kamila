@@ -80,7 +80,8 @@ class KamilaClustering(BaseEstimator, ClusterMixin):
     total_dist_ : float or None
         Total combined distance / objective value.
     fitted_min_dist_ : ndarray of shape (n_samples,) or None
-        Minimum continuous distance from each training observation to fitted cluster centers.
+        Minimum continuous distance from each training observation to fitted
+        cluster centers.
     """
 
     def __init__(
