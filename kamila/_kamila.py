@@ -374,4 +374,3 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
 
     def _more_tags(self):
         return {"no_validation": False, "requires_y": False, "allow_nan": False}
-

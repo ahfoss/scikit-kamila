@@ -153,9 +153,11 @@ def _validate_and_split_data(
         )
 
     if hasattr(X, "ndim") and X.ndim != 2:
+        shape = getattr(X, "shape", None)
         raise ValueError(
-            f"Expected 2D array, got 1D array instead: shape={getattr(X, 'shape', None)}.\n"
-            "Reshape your data either using array.reshape(-1, 1) if your data has a single feature "
+            f"Expected 2D array, got 1D array instead: shape={shape}.\n"
+            "Reshape your data either using array.reshape(-1, 1) "
+            "if your data has a single feature "
             "or array.reshape(1, -1) if it contains a single sample."
         )
 
@@ -166,17 +168,20 @@ def _validate_and_split_data(
         n_samples = len(X_list)
         if n_samples == 0:
             raise ValueError(
-                f"Found array with 0 sample(s) (shape=(0, 0)) while a minimum of 1 is required."
+                "Found array with 0 sample(s) (shape=(0, 0)) "
+                "while a minimum of 1 is required."
             )
         n_features = len(X_list[0]) if hasattr(X_list[0], "__len__") else 0
 
     if n_samples == 0:
         raise ValueError(
-            f"Found array with 0 sample(s) (shape=({n_samples}, {n_features})) while a minimum of 1 is required."
+            f"Found array with 0 sample(s) (shape=({n_samples}, {n_features})) "
+            "while a minimum of 1 is required."
         )
     if n_features == 0:
         raise ValueError(
-            f"Found array with 0 feature(s) (shape=({n_samples}, 0)) while a minimum of 1 is required."
+            f"Found array with 0 feature(s) (shape=({n_samples}, 0)) "
+            "while a minimum of 1 is required."
         )
 
     if np.iscomplexobj(X):

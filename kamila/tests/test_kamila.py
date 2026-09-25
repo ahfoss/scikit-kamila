@@ -478,9 +478,7 @@ def test_validation_errors():
         KamilaClustering(max_iter=0).fit(X)
 
     # Invalid cat_bandwidth (negative)
-    with pytest.raises(
-        ValueError, match="cat_bandwidth must be a non-negative number"
-    ):
+    with pytest.raises(ValueError, match="cat_bandwidth must be a non-negative number"):
         KamilaClustering(cat_bandwidth=-0.5).fit(X)
 
     # Invalid categorical_features string
@@ -608,7 +606,8 @@ def test_cpp_bindings_direct_and_types():
     num_levels = np.array([2, 2], dtype=np.int32)
 
     init_means = np.array([[0.0, 1.0], [10.0, 11.0]], dtype=np.float64)
-    # Pass init_log_probs as raw nested Python lists (exercising nb::sequence in extract_double_vector)
+    # Pass init_log_probs as raw nested Python lists
+    # (exercising nb::sequence in extract_double_vector)
     init_log_probs_list = [
         [[np.log(0.6), np.log(0.4)], [np.log(0.3), np.log(0.7)]],
         [[np.log(0.5), np.log(0.5)], [np.log(0.2), np.log(0.8)]],
@@ -685,9 +684,7 @@ def test_cpp_degenerate_solution():
     """Verify C++ degenerate solution detection (empty cluster handling)."""
     # 2 points with 3 clusters and initialization placing center 2 very far away
     con_data = np.array([[0.0, 0.0], [0.1, 0.1]], dtype=np.float64)
-    init_means = np.array(
-        [[0.0, 0.0], [0.1, 0.1], [1000.0, 1000.0]], dtype=np.float64
-    )
+    init_means = np.array([[0.0, 0.0], [0.1, 0.1], [1000.0, 1000.0]], dtype=np.float64)
 
     res = _kamila_cpp.kamila_loop_cpp(
         con_data=con_data,
@@ -736,7 +733,7 @@ def test_cpp_degenerate_solution():
 
 
 def test_cpp_kde_bandwidth_zero_variance_and_identical_points():
-    """Verify KDE bandwidth fallback paths when data has zero variance / identical points."""
+    """Verify KDE bandwidth fallback when data has zero variance."""
     # All continuous points identical -> variance = 0, IQR = 0
     X_con = np.array([[2.0, 3.0]] * 10)
     kam = KamilaClustering(
@@ -755,7 +752,7 @@ def test_cpp_kde_bandwidth_zero_variance_and_identical_points():
 
 
 def test_cpp_single_cluster_and_single_level():
-    """Verify C++ smoothing and distance calculations with n_clusters=1 and n_levels=1."""
+    """Verify C++ smoothing and distance with n_clusters=1 and n_levels=1."""
     X_con = np.array([[1.0], [2.0], [3.0], [4.0]])
     X_cat = np.array([[0], [0], [0], [0]], dtype=np.int32)  # single level (nlev=1)
     X = np.hstack([X_con, X_cat])
@@ -777,7 +774,7 @@ def test_cpp_single_cluster_and_single_level():
 
 
 def test_cpp_custom_weights():
-    """Verify C++ weighted distance and likelihood routines with custom feature weights."""
+    """Verify C++ distance and likelihood routines with custom feature weights."""
     con_data = np.array([[1.0, 10.0], [2.0, 20.0], [1.1, 10.5], [2.1, 20.5]])
     cat_data = np.array([["A", "X"], ["B", "Y"], ["A", "X"], ["B", "Y"]])
     X = np.hstack([con_data, cat_data])
@@ -796,4 +793,3 @@ def test_cpp_custom_weights():
     assert kam.labels_.shape == (4,)
     preds = kam.predict(X)
     np.testing.assert_array_equal(preds, kam.labels_)
-
