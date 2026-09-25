@@ -1,10 +1,6 @@
 """Input validation and preprocessing routines for mixed continuous and categorical
 data."""
 
-# Authors: Alexander Foss <alexanderhfoss@gmail.com>
-#          Marianthi Markatou <markatou@buffalo.edu>
-# License: BSD 3 clause
-
 import numpy as np
 
 

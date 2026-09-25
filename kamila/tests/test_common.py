@@ -1,8 +1,3 @@
-"""This file shows how to write tests based on the scikit-learn common tests."""
-
-# Authors: scikit-learn-contrib developers
-# License: BSD 3 clause
-
 import pytest
 from sklearn.utils.estimator_checks import parametrize_with_checks
 
