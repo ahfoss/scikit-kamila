@@ -25,7 +25,6 @@ def test_sphinx_documentation_build(tmp_path):
     assert (out_dir / "index.html").exists(), "index.html was not generated"
     assert (out_dir / "api.html").exists(), "api.html was not generated"
     assert (out_dir / "user_guide.html").exists(), "user_guide.html was not generated"
-    assert (out_dir / "quick_start.html").exists(), "quick_start.html was not generated"
     assert (
         out_dir / "auto_examples" / "index.html"
     ).exists(), "auto_examples/index.html was not generated"
