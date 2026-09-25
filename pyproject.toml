@@ -194,9 +194,14 @@ testpaths = ["kamila"]
 norecursedirs = ["doc", "examples", "scripts", ".git", "build", "dist"]
 addopts = "--doctest-modules --color=yes"
 doctest_optionflags = "NORMALIZE_WHITESPACE"
+filterwarnings = [
+    "error",
+    "ignore::coverage.exceptions.CoverageWarning",
+]
 
 [tool.coverage.run]
 source = ["kamila"]
+disable_warnings = ["include-ignored"]
 omit = [
     "*/tests/*",
     "*_version.py",

@@ -517,12 +517,27 @@ def test_validation_errors():
         _validate_and_split_data(np.array([1.0, 2.0]))
 
     # Empty data
-    with pytest.raises(ValueError, match="Empty data passed"):
+    with pytest.raises(ValueError, match="Found array with 0 sample"):
         _validate_and_split_data([])
 
     # Zero features
-    with pytest.raises(ValueError, match="X must have at least one feature"):
+    with pytest.raises(ValueError, match="Found array with 0 feature"):
         _validate_and_split_data(np.empty((5, 0)))
+
+    # Sparse data
+    import scipy.sparse as sp
+
+    with pytest.raises(TypeError, match="sparse matrix was passed"):
+        _validate_and_split_data(sp.csr_matrix([[1.0, 2.0]]))
+
+    # Complex data
+    with pytest.raises(ValueError, match="Complex data not supported"):
+        _validate_and_split_data(np.array([[1.0 + 2.0j, 3.0]]))
+
+    # Estimator tags
+    kam_tags = KamilaClustering()
+    assert isinstance(kam_tags._more_tags(), dict)
+    assert hasattr(kam_tags, "__sklearn_tags__")
 
     # NaN / Inf in continuous
     with pytest.raises(ValueError, match="Continuous features contain NaN or infinite"):
