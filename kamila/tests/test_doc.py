@@ -1,5 +1,9 @@
 """Unit test for Sphinx documentation build."""
 
+# Authors: Alexander Foss <alexanderhfoss@gmail.com>
+# License: BSD 3 clause
+
+import warnings
 from pathlib import Path
 
 import pytest
@@ -12,14 +16,18 @@ def test_sphinx_documentation_build(tmp_path):
     doc_dir = Path(__file__).resolve().parents[2] / "doc"
     out_dir = tmp_path / "html"
 
-    ret = sphinx_cmd_build.build_main(
-        [
-            "-b",
-            "html",
-            str(doc_dir),
-            str(out_dir),
-        ]
-    )
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        warnings.filterwarnings("ignore", category=FutureWarning)
+        warnings.filterwarnings("ignore", category=UserWarning)
+        ret = sphinx_cmd_build.build_main(
+            [
+                "-b",
+                "html",
+                str(doc_dir),
+                str(out_dir),
+            ]
+        )
 
     assert ret == 0, f"Sphinx build failed with return code {ret}"
     assert (out_dir / "index.html").exists(), "index.html was not generated"

@@ -9,7 +9,7 @@ from . import _kamila_cpp
 from ._validation import _validate_and_split_data
 
 
-class KamilaClustering(BaseEstimator, ClusterMixin):
+class KamilaClustering(ClusterMixin, BaseEstimator):
     r"""KAMILA clustering of mixed-type continuous and categorical data.
 
     KAMILA (KAy-means for MIxed LArge datasets) is an iterative clustering technique
@@ -127,10 +127,10 @@ class KamilaClustering(BaseEstimator, ClusterMixin):
             )
         if (
             not isinstance(self.cat_bandwidth, (int, float, np.number))
-            or self.cat_bandwidth <= 0
+            or self.cat_bandwidth < 0
         ):
             raise ValueError(
-                "cat_bandwidth must be a strictly positive number; got "
+                "cat_bandwidth must be a non-negative number; got "
                 f"{self.cat_bandwidth!r}."
             )
 
@@ -219,7 +219,7 @@ class KamilaClustering(BaseEstimator, ClusterMixin):
         else:
             rng = check_random_state(self.random_state)
             best_res = None
-            best_obj = float("inf")
+            best_obj = -float("inf")
 
             for _ in range(self.n_init):
                 if n_con > 0:
@@ -262,7 +262,9 @@ class KamilaClustering(BaseEstimator, ClusterMixin):
                     has_cat=bool(n_cat > 0),
                 )
 
-                if res["objective"] < best_obj:
+                if best_res is None or (
+                    not np.isnan(res["objective"]) and res["objective"] > best_obj
+                ):
                     best_obj = res["objective"]
                     best_res = res
 
@@ -377,3 +379,12 @@ class KamilaClustering(BaseEstimator, ClusterMixin):
             Index of the cluster each sample belongs to.
         """
         return self.fit(X, y).labels_
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        tags.input_tags.sparse = False
+        tags.array_api_support = False
+        return tags
+
+    def _more_tags(self):
+        return {"no_validation": False, "requires_y": False, "allow_nan": False}

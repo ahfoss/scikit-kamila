@@ -2,6 +2,7 @@
 data."""
 
 import numpy as np
+import scipy.sparse as sp
 
 
 def _check_categorical_features(
@@ -141,19 +142,46 @@ def _validate_and_split_data(
     elif feature_names is not None:
         detected_feature_names = np.asarray(feature_names, dtype=object)
 
+    if sp.issparse(X):
+        raise TypeError(
+            "A sparse matrix was passed, but dense data is required. "
+            "Use X.toarray() to convert to a dense numpy array."
+        )
+
     if hasattr(X, "ndim") and X.ndim != 2:
-        raise ValueError(f"Expected 2D array, got shape {getattr(X, 'shape', None)}")
+        shape = getattr(X, "shape", None)
+        raise ValueError(
+            f"Expected 2D array, got 1D array instead: shape={shape}.\n"
+            "Reshape your data either using array.reshape(-1, 1) "
+            "if your data has a single feature "
+            "or array.reshape(1, -1) if it contains a single sample."
+        )
+
     if hasattr(X, "shape"):
         n_samples, n_features = X.shape[0], X.shape[1]
     else:
         X_list = list(X)
         n_samples = len(X_list)
         if n_samples == 0:
-            raise ValueError("Empty data passed.")
-        n_features = len(X_list[0])
+            raise ValueError(
+                "Found array with 0 sample(s) (shape=(0, 0)) "
+                "while a minimum of 1 is required."
+            )
+        n_features = len(X_list[0]) if hasattr(X_list[0], "__len__") else 0
 
+    if n_samples == 0:
+        raise ValueError(
+            f"Found array with 0 sample(s) (shape=({n_samples}, {n_features})) "
+            "while a minimum of 1 is required."
+        )
     if n_features == 0:
-        raise ValueError("X must have at least one feature.")
+        raise ValueError(
+            f"Found array with 0 feature(s) (shape=({n_samples}, 0)) "
+            "while a minimum of 1 is required."
+        )
+
+    if np.iscomplexobj(X):
+        raise ValueError("Complex data not supported")
 
     if is_categorical is None:
         is_categorical = _check_categorical_features(
