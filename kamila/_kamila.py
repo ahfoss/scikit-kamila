@@ -1,9 +1,5 @@
 """KAMILA: KAy-means for MIxed LArge datasets clustering."""
 
-# Authors: Alexander Foss <alexanderhfoss@gmail.com>
-#          Marianthi Markatou <markatou@buffalo.edu>
-# License: BSD 3 clause
-
 import numpy as np
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils import check_random_state
@@ -24,7 +20,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
     Parameters
     ----------
     n_clusters : int, default=2
-        The number of clusters to form as well as the number of centroids to generate.
+        The number of clusters to form.
     categorical_features : None, 'from_dtype', or array-like, default=None
         Indicates which features are categorical:
         - ``None``: all features are treated as continuous.
@@ -36,7 +32,8 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         Number of times the algorithm will be run with different centroid seeds.
         The final results will be the best output of n_init runs in terms of objective.
     max_iter : int, default=25
-        Maximum number of iterations of the KAMILA algorithm for a single run.
+        Maximum number of iterations of the KAMILA algorithm for a single
+        run/initialization.
     cat_bandwidth : float, default=0.025
         Categorical smoothing parameter between 0 and 1.
     con_weights : array-like of shape (n_con,), optional, default=None
@@ -60,14 +57,15 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
     labels_ : ndarray of shape (n_samples,)
         Labels of each point in the training set.
     inertia_ : float
-        Sum of squared distances / objective value of the best initialization.
+        Objective value of the best initialization; negative log-likelihood;
+        lower is better.
     n_iter_ : int
         Number of iterations run in the best initialization.
     n_features_in_ : int
         Number of features seen during :meth:`fit`.
-    feature_names_in_ : ndarray of shape (n_features_in_,)
+    feature_names_in_ : ndarray of shape (n_features,)
         Names of features seen during :meth:`fit` (if X had feature names).
-    is_categorical_ : ndarray of shape (n_features_in_,) of bool
+    is_categorical_ : ndarray of shape (n_features,) of bool
         Boolean mask indicating which features are categorical.
     categories_ : list of ndarray
         The categories / levels present in each categorical feature during :meth:`fit`.

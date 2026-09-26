@@ -65,6 +65,9 @@ KamilaResult kamila_loop(
     // Compute total continuous distance T to overall mean
     double total_dist = 0.0;
     if (has_con) {
+	// TODO: Need to consider whether we want numerical stability by 
+	// adding x_i/n each time vs. the current approach of sum all and
+	// then normalize.
         std::vector<double> grand_mean(pp, 0.0);
         for (int i = 0; i < nn; ++i) {
             for (int p = 0; p < pp; ++p) {
@@ -91,7 +94,7 @@ KamilaResult kamila_loop(
         }
     }
 
-    // KDE workspace
+    // KDE variables.
     const int m_grid = 401;
     std::vector<double> r_sorted(has_con ? nn : 0);
     std::vector<double> gcounts(m_grid);
@@ -102,7 +105,7 @@ KamilaResult kamila_loop(
     std::vector<double> dens_r(m_grid);
     std::vector<double> diff_dens_r(m_grid - 1);
 
-    // Categorical workspace
+    // Categorical variables.
     int max_nlev = 0;
     for (int q = 0; q < qq; ++q) {
         if (num_levels[q] > max_nlev) max_nlev = num_levels[q];
@@ -567,6 +570,7 @@ std::vector<int> kamila_predict(
                 }
                 score -= std::sqrt(sum_sq);
             }
+	    // TODO: Where's the radial kernel???
 
             if (has_cat) {
                 // Categorical log likelihood
