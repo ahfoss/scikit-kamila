@@ -47,4 +47,4 @@ Fitted attributes are split by data type: `cluster_centers_con_` (K × n_con) an
 
 Correctness is primarily established by matching the reference R implementation. `scripts/generate_r_reference_data.R` (requires R with `kamila` and `jsonlite`) runs `kamila:::kamilaLoopCpp` with explicit initializations and writes JSON fixtures to `kamila/tests/data/`. The `test_parity_*` tests in `kamila/tests/test_kamila.py` load these fixtures, feed the same init into `KamilaClustering`, and compare results. When changing algorithm behavior in `src/`, parity tests are the main signal; regenerate fixtures only if the R reference itself changes.
 
-`kamila/tests/test_common.py` (scikit-learn `parametrize_with_checks` via `kamila/utils/discovery.py`) is currently skipped.
+`kamila/tests/test_common.py` runs the scikit-learn estimator checks (`estimator_checks_generator`, array-API checks excluded) on every estimator found by `kamila/utils/discovery.py`. It requires scikit-learn >= 1.6 and skips itself on older versions.
