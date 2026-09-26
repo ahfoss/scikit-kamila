@@ -82,6 +82,9 @@ nb::dict kamila_loop_cpp(
     const double* init_means_ptr = nullptr;
     if (has_con && !init_means_obj.is_none()) {
         auto means_arr = nb::cast<nb::ndarray<const double, nb::c_contig, nb::device::cpu>>(init_means_obj);
+        if (means_arr.size() != static_cast<size_t>(n_clusters) * static_cast<size_t>(n_con)) {
+            throw nb::value_error("init_means must contain n_clusters * n_con values.");
+        }
         init_means_ptr = means_arr.data();
     }
 
@@ -89,6 +92,17 @@ nb::dict kamila_loop_cpp(
     if (has_cat && !init_log_probs_obj.is_none()) {
         for (auto item : nb::cast<nb::sequence>(init_log_probs_obj)) {
             init_log_probs.push_back(extract_double_vector(item));
+        }
+        if (init_log_probs.size() != static_cast<size_t>(n_cat)) {
+            throw nb::value_error("init_log_probs must contain one matrix per categorical feature.");
+        }
+        if (num_levels_ptr != nullptr) {
+            for (int q = 0; q < n_cat; ++q) {
+                size_t expected = static_cast<size_t>(n_clusters) * static_cast<size_t>(num_levels_ptr[q]);
+                if (init_log_probs[q].size() != expected) {
+                    throw nb::value_error("init_log_probs[q] must contain n_clusters * num_levels[q] values.");
+                }
+            }
         }
     }
 
