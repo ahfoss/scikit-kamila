@@ -474,7 +474,7 @@ def test_validation_errors():
         KamilaClustering(max_iter=0).fit(X)
 
     # Invalid cat_bandwidth (negative)
-    with pytest.raises(ValueError, match="cat_bandwidth must be a non-negative number"):
+    with pytest.raises(ValueError, match=r"cat_bandwidth must be a number in \[0, 1\]"):
         KamilaClustering(cat_bandwidth=-0.5).fit(X)
 
     # Invalid categorical_features string
@@ -541,7 +541,7 @@ def test_validation_errors():
     with pytest.raises(ValueError, match="con_weights shape"):
         _validate_and_split_data(np.array([[1.0, 2.0], [3.0, 4.0]]), con_weights=[1.0])
 
-    with pytest.raises(ValueError, match="All con_weights must be strictly positive"):
+    with pytest.raises(ValueError, match="con_weights must be finite"):
         _validate_and_split_data(
             np.array([[1.0, 2.0], [3.0, 4.0]]), con_weights=[1.0, -0.5]
         )
@@ -554,7 +554,7 @@ def test_validation_errors():
             cat_weights=[1.0],
         )
 
-    with pytest.raises(ValueError, match="All cat_weights must be strictly positive"):
+    with pytest.raises(ValueError, match="cat_weights must be finite"):
         _validate_and_split_data(
             np.array([["a", "b"], ["c", "d"]]),
             categorical_features=[True, True],

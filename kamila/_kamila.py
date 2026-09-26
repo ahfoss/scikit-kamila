@@ -1,5 +1,7 @@
 """KAMILA: KAy-means for MIxed LArge datasets clustering."""
 
+import numbers
+
 import numpy as np
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils import check_random_state
@@ -14,6 +16,16 @@ except ImportError:  # pragma: no cover  (scikit-learn < 1.6)
 
     def _check_feature_names(estimator, X, *, reset):
         return estimator._check_feature_names(X, reset=reset)
+
+
+def _is_int(value):
+    """Return True for integers, excluding bool."""
+    return isinstance(value, numbers.Integral) and not isinstance(value, bool)
+
+
+def _is_real(value):
+    """Return True for real numbers, excluding bool."""
+    return isinstance(value, numbers.Real) and not isinstance(value, bool)
 
 
 class KamilaClustering(ClusterMixin, BaseEstimator):
@@ -146,7 +158,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
 
     def _validate_parameters(self, n_samples):
         """Validate estimator hyperparameters."""
-        if not isinstance(self.n_clusters, (int, np.integer)) or self.n_clusters < 1:
+        if not _is_int(self.n_clusters) or self.n_clusters < 1:
             raise ValueError(
                 f"n_clusters must be an integer >= 1; got {self.n_clusters!r}."
             )
@@ -154,22 +166,17 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
             raise ValueError(
                 f"n_samples={n_samples} should be >= n_clusters={self.n_clusters}."
             )
-        if not isinstance(self.n_init, (int, np.integer)) or self.n_init < 1:
+        if not _is_int(self.n_init) or self.n_init < 1:
             raise ValueError(f"n_init must be an integer >= 1; got {self.n_init!r}.")
-        if not isinstance(self.max_iter, (int, np.integer)) or self.max_iter < 1:
+        if not _is_int(self.max_iter) or self.max_iter < 1:
             raise ValueError(
                 f"max_iter must be an integer >= 1; got {self.max_iter!r}."
             )
-        if (
-            not isinstance(self.cat_bandwidth, (int, float, np.number))
-            or self.cat_bandwidth < 0
-        ):
+        if not _is_real(self.cat_bandwidth) or not 0 <= self.cat_bandwidth <= 1:
             raise ValueError(
-                "cat_bandwidth must be a non-negative number; got "
+                "cat_bandwidth must be a number in [0, 1]; got "
                 f"{self.cat_bandwidth!r}."
             )
-        if self.cat_bandwidth > 1:
-            raise ValueError(f"cat_bandwidth must be <= 1; got {self.cat_bandwidth!r}.")
 
     def _validate_init(self, n_con, n_cat, num_levels):
         """Validate explicit initializations against the data.
@@ -466,8 +473,13 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
         tags.input_tags.sparse = False
+        tags.input_tags.categorical = self.categorical_features is not None
         tags.array_api_support = False
         return tags
 
     def _more_tags(self):
-        return {"no_validation": False, "requires_y": False, "allow_nan": False}
+        # Tags for scikit-learn < 1.6, which ignores __sklearn_tags__.
+        X_types = ["2darray"]
+        if self.categorical_features is not None:
+            X_types.append("categorical")
+        return {"X_types": X_types}

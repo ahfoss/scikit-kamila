@@ -1,20 +1,19 @@
-import pytest
-from sklearn.utils.estimator_checks import (
-    _get_check_estimator_ids,
-    estimator_checks_generator,
-)
+from sklearn.utils.estimator_checks import parametrize_with_checks
 
+from kamila import KamilaClustering
 from kamila.utils.discovery import all_estimators
 
-_checks = [
-    item
-    for _, est_cls in all_estimators()
-    for item in estimator_checks_generator(estimator=est_cls(), legacy=True)
-    if "array_api" not in getattr(item[1], "func", item[1]).__name__
+# Default-constructed estimators treat every feature as continuous, so also check
+# a configuration that exercises the categorical code path. (A boolean mask can't
+# be used here: the checks fit on varying numbers of features.)
+_estimators = [est_cls() for _, est_cls in all_estimators()] + [
+    KamilaClustering(categorical_features=[0]),
 ]
 
 
-@pytest.mark.parametrize("estimator, check", _checks, ids=_get_check_estimator_ids)
+# parametrize_with_checks (rather than estimator_checks_generator, which is new in
+# scikit-learn 1.6) keeps this test runnable on the oldest supported version.
+@parametrize_with_checks(_estimators)
 def test_estimators(estimator, check):
     """Check the compatibility with scikit-learn API"""
     check(estimator)
