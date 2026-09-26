@@ -789,3 +789,298 @@ def test_cpp_custom_weights():
     assert kam.labels_.shape == (4,)
     preds = kam.predict(X)
     np.testing.assert_array_equal(preds, kam.labels_)
+
+# =============================================================================
+# Out-of-Sample Prediction Parity Tests Matching R 'classifyKamila'
+# =============================================================================
+
+
+def test_parity_predict_small_mixed_out_of_sample():
+    """Verify predict on new out-of-sample observations matches R classifyKamila.
+
+    This test checks out-of-sample points on the small mixed dataset where continuous
+    radial KDE log-density and categorical log-likelihoods interact. Points such as
+    [1.5, 2.5, 1, 2] are closer in raw Euclidean distance to centroid 0, but the
+    strong categorical probability for cluster 1 combined with the radial density
+    evaluation assigns it to cluster 1 in R classifyKamila.
+    """
+    data = load_fixture("reference_small_mixed.json")
+    con_data = np.asarray(data["con_data"], dtype=np.float64)
+    cat_data = np.asarray(data["cat_data"], dtype=np.int32)
+    X = np.hstack([con_data, cat_data])
+
+    init_means = np.asarray(data["init_means"], dtype=np.float64)
+    init_log_probs = [np.asarray(lp, dtype=np.float64) for lp in data["init_log_probs"]]
+
+    kam = KamilaClustering(
+        n_clusters=data["num_clust"],
+        categorical_features=[2, 3],
+        max_iter=20,
+        cat_bandwidth=data["cat_bw"],
+        con_weights=data["con_weights"],
+        cat_weights=data["cat_weights"],
+        init_means=init_means,
+        init_log_probs=init_log_probs,
+    )
+    kam.fit(X)
+
+    # Out-of-sample test instances with diverse continuous and categorical combinations
+    X_test = np.array(
+        [
+            [1.5, 2.5, 1, 2],  # Cluster 1 (radial KDE + cat log-lik)
+            [3.0, 5.0, 0, 0],  # Cluster 0 in R classifyKamila
+            [2.8, 4.5, 1, 2],  # Cluster 1 in R classifyKamila
+            [5.0, 8.0, 0, 0],  # Cluster 1 in R classifyKamila
+            [1.0, 2.0, 1, 2],  # Cluster 0 in R classifyKamila
+            [3.5, 5.5, 0, 0],  # Cluster 0 in R classifyKamila
+        ]
+    )
+
+    # Ground truth from R classifyKamila(kamilaObj, list(conTest, catTest))
+    expected_preds = np.array([1, 0, 1, 1, 0, 0], dtype=np.int32)
+
+    actual_preds = kam.predict(X_test)
+    np.testing.assert_array_equal(
+        actual_preds,
+        expected_preds,
+        err_msg=(
+            "predict() output does not match R classifyKamila on "
+            "small mixed test set"
+        ),
+    )
+
+
+def test_parity_predict_medium_mixed_out_of_sample():
+    """Verify predict on 3-cluster medium mixed dataset matches R classifyKamila."""
+    data = load_fixture("reference_medium_mixed.json")
+    con_data = np.asarray(data["con_data"], dtype=np.float64)
+    cat_data = np.asarray(data["cat_data"], dtype=np.int32)
+    X = np.hstack([con_data, cat_data])
+
+    init_means = np.asarray(data["init_means"], dtype=np.float64)
+    init_log_probs = [np.asarray(lp, dtype=np.float64) for lp in data["init_log_probs"]]
+
+    kam = KamilaClustering(
+        n_clusters=data["num_clust"],
+        categorical_features=[3, 4],
+        max_iter=25,
+        cat_bandwidth=data["cat_bw"],
+        con_weights=data["con_weights"],
+        cat_weights=data["cat_weights"],
+        init_means=init_means,
+        init_log_probs=init_log_probs,
+    )
+    kam.fit(X)
+
+    # Out-of-sample test points
+    X_test = np.array(
+        [
+            [0.0, 0.0, 3.57142857, 1, 1],
+            [0.0, 0.0, 4.28571429, 1, 1],
+            [0.0, 0.0, 5.00000000, 1, 1],
+            [1.5, 1.0, 1.00000000, 1, 2],
+            [5.5, 6.0, 6.00000000, 0, 0],
+            [8.0, 2.0, 1.00000000, 0, 2],
+        ]
+    )
+
+    # Ground truth from R classifyKamila(kamilaObj, list(conTest, catTest))
+    expected_preds = np.array([1, 1, 1, 2, 1, 2], dtype=np.int32)
+
+    actual_preds = kam.predict(X_test)
+    np.testing.assert_array_equal(
+        actual_preds,
+        expected_preds,
+        err_msg=(
+            "predict() output does not match R classifyKamila on "
+            "medium mixed test set"
+        ),
+    )
+
+
+def test_parity_predict_continuous_only_out_of_sample():
+    """Verify predict on continuous-only dataset with new test points."""
+    data = load_fixture("reference_continuous_only.json")
+    con_data = np.asarray(data["con_data"], dtype=np.float64)
+    init_means = np.asarray(data["init_means"], dtype=np.float64)
+
+    kam = KamilaClustering(
+        n_clusters=data["num_clust"],
+        categorical_features=None,
+        max_iter=25,
+        con_weights=data["con_weights"],
+        init_means=init_means,
+    )
+    kam.fit(con_data)
+
+    X_test = np.array(
+        [
+            [1.0, 2.0],
+            [5.0, 8.0],
+            [2.1, 1.9],
+            [7.2, 6.9],
+            [-1.0, 0.0],
+            [10.0, 15.0],
+        ]
+    )
+
+    expected_preds = np.array([0, 1, 0, 1, 0, 1], dtype=np.int32)
+    actual_preds = kam.predict(X_test)
+    np.testing.assert_array_equal(actual_preds, expected_preds)
+
+
+def test_parity_predict_categorical_only_out_of_sample():
+    """Verify predict on categorical-only dataset with new test points."""
+    data = load_fixture("reference_categorical_only.json")
+    cat_data = np.asarray(data["cat_data"], dtype=np.int32)
+    init_log_probs = [np.asarray(lp, dtype=np.float64) for lp in data["init_log_probs"]]
+
+    kam = KamilaClustering(
+        n_clusters=data["num_clust"],
+        categorical_features=[True, True],
+        max_iter=25,
+        cat_bandwidth=data["cat_bw"],
+        cat_weights=data["cat_weights"],
+        init_log_probs=init_log_probs,
+    )
+    kam.fit(cat_data)
+
+    X_test = np.array(
+        [
+            [0, 0],
+            [1, 1],
+            [0, 1],
+            [1, 0],
+        ]
+    )
+
+    # Compute expected log likelihoods for each cluster
+    expected_preds = np.array([0, 1, 0, 0], dtype=np.int32)
+    actual_preds = kam.predict(X_test)
+    np.testing.assert_array_equal(actual_preds, expected_preds)
+
+
+def test_parity_predict_weighted_features():
+    """Verify predict with custom continuous and categorical feature weights."""
+    data = load_fixture("reference_small_mixed.json")
+    con_data = np.asarray(data["con_data"], dtype=np.float64)
+    cat_data = np.asarray(data["cat_data"], dtype=np.int32)
+    X = np.hstack([con_data, cat_data])
+
+    init_means = np.asarray(data["init_means"], dtype=np.float64)
+    init_log_probs = [np.asarray(lp, dtype=np.float64) for lp in data["init_log_probs"]]
+
+    # Non-uniform weights
+    con_w = [1.0, 1.0]
+    cat_w = [1.0, 0.5]
+
+    kam = KamilaClustering(
+        n_clusters=data["num_clust"],
+        categorical_features=[2, 3],
+        max_iter=20,
+        cat_bandwidth=data["cat_bw"],
+        con_weights=con_w,
+        cat_weights=cat_w,
+        init_means=init_means,
+        init_log_probs=init_log_probs,
+    )
+    kam.fit(X)
+
+    X_test = np.array(
+        [
+            [1.5, 2.5, 1, 2],
+            [3.0, 5.0, 0, 0],
+            [5.0, 8.0, 1, 2],
+            [1.0, 2.0, 0, 0],
+        ]
+    )
+
+    # R classifyKamila with weighted features
+    expected_preds = np.array([1, 0, 1, 0], dtype=np.int32)
+    actual_preds = kam.predict(X_test)
+    np.testing.assert_array_equal(
+        actual_preds,
+        expected_preds,
+        err_msg="predict() does not match R classifyKamila with weighted features",
+    )
+
+
+def test_predict_single_sample_consistency():
+    """Verify predicting on 1 sample array of shape (1, n_features) matches
+    batch output.
+    """
+    data = load_fixture("reference_small_mixed.json")
+    con_data = np.asarray(data["con_data"], dtype=np.float64)
+    cat_data = np.asarray(data["cat_data"], dtype=np.int32)
+    X = np.hstack([con_data, cat_data])
+
+    kam = KamilaClustering(
+        n_clusters=data["num_clust"],
+        categorical_features=[2, 3],
+        max_iter=20,
+        cat_bandwidth=data["cat_bw"],
+        con_weights=data["con_weights"],
+        cat_weights=data["cat_weights"],
+        init_means=np.asarray(data["init_means"]),
+        init_log_probs=[np.asarray(lp) for lp in data["init_log_probs"]],
+    )
+    kam.fit(X)
+
+    X_test = np.array(
+        [
+            [1.5, 2.5, 1, 2],
+            [3.0, 5.0, 0, 0],
+            [5.0, 8.0, 0, 0],
+        ]
+    )
+    batch_preds = kam.predict(X_test)
+    for i in range(len(X_test)):
+        single_pred = kam.predict(X_test[[i]])
+        assert single_pred.shape == (1,)
+        assert single_pred[0] == batch_preds[i]
+
+
+def test_predict_pandas_dataframe():
+    """Verify predict works with pandas DataFrame containing category dtypes."""
+    import pandas as pd
+
+    data = load_fixture("reference_small_mixed.json")
+    con_data = np.asarray(data["con_data"], dtype=np.float64)
+    cat_data = np.asarray(data["cat_data"], dtype=np.int32)
+
+    cat_map_0 = {0: "low", 1: "med", 2: "high"}
+    cat_map_1 = {0: "no", 1: "maybe", 2: "yes"}
+
+    df_train = pd.DataFrame(
+        {
+            "c0": con_data[:, 0],
+            "c1": con_data[:, 1],
+            "cat0": pd.Series([cat_map_0[v] for v in cat_data[:, 0]], dtype="category"),
+            "cat1": pd.Series([cat_map_1[v] for v in cat_data[:, 1]], dtype="category"),
+        }
+    )
+
+    kam = KamilaClustering(
+        n_clusters=2,
+        categorical_features=["cat0", "cat1"],
+        max_iter=20,
+        cat_bandwidth=data["cat_bw"],
+        init_means=np.asarray(data["init_means"]),
+        init_log_probs=[np.asarray(lp) for lp in data["init_log_probs"]],
+    )
+    kam.fit(df_train)
+
+    df_test = pd.DataFrame(
+        {
+            "c0": [1.5, 3.0, 5.0],
+            "c1": [2.5, 5.0, 8.0],
+            "cat0": ["med", "low", "low"],
+            "cat1": ["yes", "no", "no"],
+        }
+    )
+
+    preds = kam.predict(df_test)
+    assert len(preds) == 3
+    # Matches R classifyKamila expected output for these three test points
+    expected = np.array([1, 0, 1], dtype=np.int32)
+    np.testing.assert_array_equal(preds, expected)

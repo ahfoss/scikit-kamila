@@ -121,6 +121,7 @@ nb::dict kamila_loop_cpp(
     out["win_dist"] = res.win_dist;
     out["total_dist"] = res.total_dist;
     out["objective"] = res.objective;
+    out["final_min_dist"] = res.final_min_dist;
 
     return out;
 }
@@ -136,6 +137,7 @@ std::vector<int> kamila_predict_cpp(
     nb::object cat_weights_obj,
     nb::object fitted_means_obj,
     nb::object fitted_log_probs_obj,
+    nb::object all_data_min_dist_obj,
     bool has_con,
     bool has_cat
 ) {
@@ -176,6 +178,20 @@ std::vector<int> kamila_predict_cpp(
         }
     }
 
+    const double* min_dist_ptr = nullptr;
+    int n_ref_samples = 0;
+    if (has_con && !all_data_min_dist_obj.is_none()) {
+        if (nb::isinstance<nb::ndarray<const double, nb::c_contig, nb::device::cpu>>(all_data_min_dist_obj)) {
+            auto arr = nb::cast<nb::ndarray<const double, nb::c_contig, nb::device::cpu>>(all_data_min_dist_obj);
+            min_dist_ptr = arr.data();
+            n_ref_samples = static_cast<int>(arr.size());
+        } else if (nb::isinstance<nb::ndarray<const double, nb::device::cpu>>(all_data_min_dist_obj)) {
+            auto arr = nb::cast<nb::ndarray<const double, nb::device::cpu>>(all_data_min_dist_obj);
+            min_dist_ptr = arr.data();
+            n_ref_samples = static_cast<int>(arr.size());
+        }
+    }
+
     return kamila::kamila_predict(
         con_ptr,
         cat_ptr,
@@ -187,6 +203,8 @@ std::vector<int> kamila_predict_cpp(
         cat_wgts_ptr,
         fitted_means_ptr,
         fitted_log_probs,
+        min_dist_ptr,
+        n_ref_samples,
         has_con,
         has_cat
     );
@@ -232,6 +250,7 @@ NB_MODULE(_kamila_cpp, m) {
         "cat_weights"_a.none() = nb::none(),
         "fitted_means"_a.none() = nb::none(),
         "fitted_log_probs"_a.none() = nb::none(),
+        "all_data_min_dist"_a.none() = nb::none(),
         "has_con"_a,
         "has_cat"_a,
         "Predict cluster memberships for new observations."
