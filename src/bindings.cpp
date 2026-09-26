@@ -47,7 +47,8 @@ nb::dict kamila_loop_cpp(
     double cat_bw,
     int max_iter,
     bool has_con,
-    bool has_cat
+    bool has_cat,
+    std::uint64_t seed
 ) {
     const double* con_ptr = nullptr;
     if (has_con && !con_data_obj.is_none()) {
@@ -121,7 +122,8 @@ nb::dict kamila_loop_cpp(
         cat_bw,
         max_iter,
         has_con,
-        has_cat
+        has_cat,
+        seed
     );
 
     nb::dict out;
@@ -249,6 +251,7 @@ NB_MODULE(_kamila_cpp, m) {
         "max_iter"_a,
         "has_con"_a,
         "has_cat"_a,
+        "seed"_a = 0,
         "Run core iterative KAMILA algorithm."
     );
     m.def(

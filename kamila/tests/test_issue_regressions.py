@@ -2,7 +2,6 @@
 
 import numpy as np
 import pytest
-from sklearn.exceptions import ConvergenceWarning
 
 from kamila import KamilaClustering, _kamila_cpp
 
@@ -30,20 +29,71 @@ def _uniform_log_probs(n_clusters, n_levels):
 # =============================================================================
 
 
-def test_empty_cluster_centroid_is_not_reset_to_origin():
-    """An empty cluster keeps its last centroid and the user is warned."""
+def test_empty_cluster_is_reinitialized_by_membership():
+    """An empty cluster is refilled from a random sample instead of dropped."""
     X = _two_blobs()
     init_means = np.array([[0.0, 0.0], [6.0, 6.0], [100.0, 100.0]])
 
-    with pytest.warns(ConvergenceWarning, match="Number of distinct clusters"):
-        km = KamilaClustering(3, init_means=init_means).fit(X)
+    km = KamilaClustering(3, init_means=init_means, random_state=0).fit(X)
+    km_again = KamilaClustering(3, init_means=init_means, random_state=0).fit(X)
 
-    np.testing.assert_array_equal(np.unique(km.labels_), [0, 1])
-    np.testing.assert_allclose(km.cluster_centers_con_[2], [100.0, 100.0])
+    np.testing.assert_array_equal(np.unique(km.labels_), [0, 1, 2])
+    assert np.all(km.cluster_centers_con_ >= X.min(axis=0))
+    assert np.all(km.cluster_centers_con_ <= X.max(axis=0))
+    np.testing.assert_array_equal(km.labels_, km_again.labels_)
+    np.testing.assert_array_equal(
+        km.cluster_centers_con_, km_again.cluster_centers_con_
+    )
+
+
+def _far_init_loop(seed, max_iter):
+    """Direct C++ call where cluster 2 starts far from all data."""
+    X = _two_blobs()
+    return X, _kamila_cpp.kamila_loop_cpp(
+        con_data=X,
+        cat_data=None,
+        n_samples=len(X),
+        n_con=2,
+        n_cat=0,
+        n_clusters=3,
+        con_weights=np.ones(2),
+        cat_weights=None,
+        num_levels=None,
+        init_means=np.array([[0.0, 0.0], [6.0, 6.0], [100.0, 100.0]]),
+        init_log_probs=None,
+        cat_bw=0.025,
+        max_iter=max_iter,
+        has_con=True,
+        has_cat=False,
+        seed=seed,
+    )
+
+
+def test_cpp_empty_cluster_takes_one_random_member():
+    """After one iteration the refilled cluster holds exactly one moved sample,
+    and its mean is that sample."""
+    X, res = _far_init_loop(seed=1, max_iter=1)
+
+    assert res["degenerate_soln"] is False
+    membership = np.asarray(res["final_membership"])
+    (moved,) = np.flatnonzero(membership == 2)
+    final_means = np.asarray(res["final_means"]).reshape(3, 2)
+    np.testing.assert_allclose(final_means[2], X[moved])
+
+
+def test_cpp_empty_cluster_reinitialization_is_seeded():
+    _, a = _far_init_loop(seed=7, max_iter=25)
+    _, b = _far_init_loop(seed=7, max_iter=25)
+
+    assert a["degenerate_soln"] is False
+    assert set(a["final_membership"]) == {0, 1, 2}
+    assert a["final_membership"] == b["final_membership"]
+    assert a["final_means"] == b["final_means"]
 
 
 def test_cpp_empty_cluster_keeps_previous_mean():
-    """The C++ loop must not overwrite an empty cluster's mean with zeros."""
+    """With fewer samples than clusters no sample can be moved; the empty
+    cluster keeps its previous mean instead of being reset to zeros."""
     con_data = np.array([[0.0, 0.0], [0.1, 0.1]], dtype=np.float64)
     init_means = np.array([[0.0, 0.0], [0.1, 0.1], [1000.0, 1000.0]], dtype=np.float64)
 
@@ -70,17 +120,16 @@ def test_cpp_empty_cluster_keeps_previous_mean():
     np.testing.assert_allclose(final_means[2], [1000.0, 1000.0])
 
 
-def test_all_restarts_degenerate_warns():
-    """5 clusters on one 4-level feature can only ever fill 4 clusters."""
+def test_categorical_only_empty_clusters_are_reinitialized():
+    """5 clusters on one 4-level feature: argmax alone can fill at most 4, so
+    the fifth is filled by moving a random sample into it."""
     rng = np.random.default_rng(0)
     X = rng.integers(0, 4, (300, 1))
 
-    with pytest.warns(ConvergenceWarning, match="Number of distinct clusters"):
-        km = KamilaClustering(
-            5, categorical_features=[0], n_init=10, random_state=0
-        ).fit(X)
+    km = KamilaClustering(5, categorical_features=[0], n_init=10, random_state=0).fit(X)
 
-    assert np.unique(km.labels_).size < 5
+    np.testing.assert_array_equal(np.unique(km.labels_), [0, 1, 2, 3, 4])
+    assert np.isfinite(km.inertia_)
 
 
 # =============================================================================
@@ -209,7 +258,6 @@ def test_cat_bandwidth_above_one_raises():
         KamilaClustering(2, categorical_features=[0], cat_bandwidth=1.5).fit(X)
 
 
-@pytest.mark.filterwarnings("ignore::sklearn.exceptions.ConvergenceWarning")
 @pytest.mark.parametrize("cat_bandwidth", [0.0, 0.025, 0.5, 1.0])
 def test_categorical_probabilities_are_valid(cat_bandwidth):
     """Every accepted bandwidth yields proper probability distributions."""

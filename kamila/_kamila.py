@@ -1,10 +1,7 @@
 """KAMILA: KAy-means for MIxed LArge datasets clustering."""
 
-import warnings
-
 import numpy as np
 from sklearn.base import BaseEstimator, ClusterMixin
-from sklearn.exceptions import ConvergenceWarning
 from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_is_fitted
 
@@ -53,7 +50,8 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
     cat_weights : array-like of shape (n_cat,), optional, default=None
         Weights for categorical features. If None, all receive weight 1.0.
     random_state : int, RandomState instance, or None, default=None
-        Determines random number generation for centroid initializations.
+        Determines random number generation for centroid initializations and
+        for re-initializing clusters that become empty during fitting.
     init_means : array-like of shape (n_clusters, n_con), optional, default=None
         Explicit initial continuous cluster centers (for deterministic testing).
         Must be finite. For data with both continuous and categorical features,
@@ -68,7 +66,6 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
     ----------
     cluster_centers_con_ : ndarray of shape (n_clusters, n_con) or None
         Coordinates of continuous cluster centers. None if no continuous features.
-        A cluster left empty keeps the center it had before it emptied.
     cluster_centers_cat_ : list of ndarray or None
         List of categorical log-probability matrices for each categorical feature.
         None if no categorical features are present.
@@ -81,8 +78,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         ``cat_log_lik_``; for mixed data it is the heuristic
         ``win_dist_ / (total_dist_ - win_dist_) * cat_log_lik_`` (the ratio falls
         back to 100 when it is undefined or negative), which is not a
-        likelihood. For data with only one feature type it is ``-inf`` when a
-        cluster is empty.
+        likelihood.
     n_iter_ : int
         Number of iterations run in the best initialization.
     n_features_in_ : int
@@ -99,8 +95,8 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         Sum over training samples of the best per-cluster log-likelihood from the
         final iteration. For mixed data this combines the continuous radial
         kernel density term and the weighted categorical term; for
-        continuous-only data it is the radial kernel density term alone. ``-inf``
-        when a cluster is empty. None if no continuous features.
+        continuous-only data it is the radial kernel density term alone. None if
+        no continuous features.
     cat_log_lik_ : float or None
         Sum over training samples of the best per-cluster weighted categorical
         log-likelihood from the final iteration. None if no categorical features.
@@ -114,6 +110,13 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
     fitted_min_dist_ : ndarray of shape (n_samples,) or None
         Minimum continuous distance from each training observation to fitted
         cluster centers.
+
+    Notes
+    -----
+    If a cluster becomes empty during fitting, a randomly selected sample (drawn
+    from clusters with more than one member) is moved into it, and the cluster's
+    parameters are estimated from that membership. The selection is controlled by
+    ``random_state``.
     """
 
     def __init__(
@@ -274,6 +277,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
 
         # Check explicit vs random initializations
         has_explicit_init = (init_means_arr is not None) or (init_lp_list is not None)
+        rng = check_random_state(self.random_state)
 
         if has_explicit_init:
             best_res = _kamila_cpp.kamila_loop_cpp(
@@ -292,9 +296,9 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
                 max_iter=int(self.max_iter),
                 has_con=bool(n_con > 0),
                 has_cat=bool(n_cat > 0),
+                seed=rng.randint(np.iinfo(np.int32).max),
             )
         else:
-            rng = check_random_state(self.random_state)
             best_res = None
             best_obj = -float("inf")
 
@@ -337,6 +341,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
                     max_iter=int(self.max_iter),
                     has_con=bool(n_con > 0),
                     has_cat=bool(n_cat > 0),
+                    seed=rng.randint(np.iinfo(np.int32).max),
                 )
 
                 if best_res is None or (
@@ -347,15 +352,6 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
 
         # Unpack best result
         self.labels_ = np.asarray(best_res["final_membership"], dtype=np.int32)
-        n_distinct = np.unique(self.labels_).size
-        if n_distinct < self.n_clusters:
-            warnings.warn(
-                f"Number of distinct clusters ({n_distinct}) found smaller than "
-                f"n_clusters ({self.n_clusters}). Empty clusters keep the "
-                "parameters they had before they emptied.",
-                ConvergenceWarning,
-                stacklevel=2,
-            )
         self.n_iter_ = int(best_res["num_iter"])
         self.inertia_ = float(best_res["objective"])
         self.win_dist_ = float(best_res["win_dist"]) if n_con > 0 else None

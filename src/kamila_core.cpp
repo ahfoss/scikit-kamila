@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <numeric>
+#include <random>
 #include <vector>
 
 #ifndef M_1_SQRT_2PI
@@ -203,9 +204,12 @@ KamilaResult kamila_loop(
     double cat_bw,
     int max_iter,
     bool has_con,
-    bool has_cat
+    bool has_cat,
+    std::uint64_t seed
 ) {
     KamilaResult result;
+    std::mt19937_64 rng(seed);
+    std::vector<int> eligible;
     int nn = n_samples;
     int pp = has_con ? n_con : 0;
     int qq = has_cat ? n_cat : 0;
@@ -393,6 +397,24 @@ KamilaResult kamila_loop(
             }
             memb_new[i] = max_idx;
             count_vec[max_idx] += 1.0;
+        }
+
+        // Re-initialize each empty cluster by moving a randomly selected point into
+        // it, drawn from clusters with more than one member so that no other
+        // cluster empties. Its parameters are then estimated from that membership.
+        // rng() % n is used instead of std::uniform_int_distribution so results
+        // for a given seed are identical across standard library implementations.
+        for (int j = 0; j < kk; ++j) {
+            if (count_vec[j] > 0.0) continue;
+            eligible.clear();
+            for (int i = 0; i < nn; ++i) {
+                if (count_vec[memb_new[i]] > 1.0) eligible.push_back(i);
+            }
+            if (eligible.empty()) break;  // fewer points than clusters
+            int i = eligible[rng() % eligible.size()];
+            count_vec[memb_new[i]] -= 1.0;
+            memb_new[i] = j;
+            count_vec[j] = 1.0;
         }
 
         // 4. Update continuous means (an empty cluster keeps its previous mean)

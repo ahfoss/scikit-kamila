@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <cmath>
+#include <cstdint>
 #include <string>
 
 namespace kamila {
@@ -36,7 +37,8 @@ KamilaResult kamila_loop(
     double cat_bw,
     int max_iter,
     bool has_con,
-    bool has_cat
+    bool has_cat,
+    std::uint64_t seed                  // seeds re-initialization of empty clusters
 );
 
 // Predict cluster memberships for new observations
