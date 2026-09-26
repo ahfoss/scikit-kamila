@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>KamilaClustering &#8212; scikit-kamila 0.1.0.dev23+ga37b7d655 documentation</title>
+    <title>KamilaClustering &#8212; scikit-kamila 0.1.0.dev24+g29aed8a55 documentation</title>
   
   
   
@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
 
-    <script src="../_static/documentation_options.js?v=fb0f43b1"></script>
+    <script src="../_static/documentation_options.js?v=f69547e3"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/sg-tags.js?v=d80f6fa4"></script>
@@ -129,8 +129,8 @@
       
     
     
-    <img src="../_static/logo.png" class="logo__image only-light" alt="scikit-kamila 0.1.0.dev23+ga37b7d655 documentation - Home"/>
-    <img src="../_static/logo.png" class="logo__image only-dark pst-js-only" alt="scikit-kamila 0.1.0.dev23+ga37b7d655 documentation - Home"/>
+    <img src="../_static/logo.png" class="logo__image only-light" alt="scikit-kamila 0.1.0.dev24+g29aed8a55 documentation - Home"/>
+    <img src="../_static/logo.png" class="logo__image only-dark pst-js-only" alt="scikit-kamila 0.1.0.dev24+g29aed8a55 documentation - Home"/>
   
   
 </a></div>
@@ -427,22 +427,30 @@ multinomial log-likelihood smoothing on categorical variables.</p>
 - array-like of bool: boolean mask of shape (n_features,).</p>
 </dd>
 <dt><strong>n_init</strong><span class="classifier">int, default=10</span></dt><dd><p>Number of times the algorithm will be run with different centroid seeds.
-The final results will be the best output of n_init runs in terms of objective.</p>
+The final results will be the best output of n_init runs in terms of objective.
+Ignored when <code class="docutils literal notranslate"><span class="pre">init_means</span></code> or <code class="docutils literal notranslate"><span class="pre">init_log_probs</span></code> is given; a single run
+from that initialization is performed instead.</p>
 </dd>
 <dt><strong>max_iter</strong><span class="classifier">int, default=25</span></dt><dd><p>Maximum number of iterations of the KAMILA algorithm for a single
 run/initialization.</p>
 </dd>
-<dt><strong>cat_bandwidth</strong><span class="classifier">float, default=0.025</span></dt><dd><p>Categorical smoothing parameter between 0 and 1.</p>
+<dt><strong>cat_bandwidth</strong><span class="classifier">float, default=0.025</span></dt><dd><p>Categorical smoothing parameter in [0, 1].</p>
 </dd>
 <dt><strong>con_weights</strong><span class="classifier">array-like of shape (n_con,), optional, default=None</span></dt><dd><p>Weights for continuous features. If None, all receive weight 1.0.</p>
 </dd>
 <dt><strong>cat_weights</strong><span class="classifier">array-like of shape (n_cat,), optional, default=None</span></dt><dd><p>Weights for categorical features. If None, all receive weight 1.0.</p>
 </dd>
-<dt><strong>random_state</strong><span class="classifier">int, RandomState instance, or None, default=None</span></dt><dd><p>Determines random number generation for centroid initializations.</p>
+<dt><strong>random_state</strong><span class="classifier">int, RandomState instance, or None, default=None</span></dt><dd><p>Determines random number generation for centroid initializations and
+for re-initializing clusters that become empty during fitting.</p>
 </dd>
-<dt><strong>init_means</strong><span class="classifier">array-like of shape (n_clusters, n_con), optional, default=None</span></dt><dd><p>Explicit initial continuous cluster centers (for deterministic testing).</p>
+<dt><strong>init_means</strong><span class="classifier">array-like of shape (n_clusters, n_con), optional, default=None</span></dt><dd><p>Explicit initial continuous cluster centers (for deterministic testing).
+Must be finite. For data with both continuous and categorical features,
+<code class="docutils literal notranslate"><span class="pre">init_log_probs</span></code> must be given as well.</p>
 </dd>
-<dt><strong>init_log_probs</strong><span class="classifier">list of array-like, optional, default=None</span></dt><dd><p>Explicit initial categorical log-probability matrices.</p>
+<dt><strong>init_log_probs</strong><span class="classifier">list of array-like, optional, default=None</span></dt><dd><p>Explicit initial categorical log-probability matrices, one of shape
+(n_clusters, n_levels) per categorical feature, with entries &lt;= 0. For
+data with both continuous and categorical features, <code class="docutils literal notranslate"><span class="pre">init_means</span></code> must
+be given as well.</p>
 </dd>
 </dl>
 </dd>
@@ -455,8 +463,13 @@ None if no categorical features are present.</p>
 </dd>
 <dt><strong>labels_</strong><span class="classifier">ndarray of shape (n_samples,)</span></dt><dd><p>Labels of each point in the training set.</p>
 </dd>
-<dt><strong>inertia_</strong><span class="classifier">float</span></dt><dd><p>Objective value of the best initialization; negative log-likelihood;
-lower is better.</p>
+<dt><strong>inertia_</strong><span class="classifier">float</span></dt><dd><p>Objective value of the selected initialization; higher is better (this
+is the opposite of scikit-learn’s <code class="docutils literal notranslate"><span class="pre">KMeans.inertia_</span></code>). For continuous-only
+data it equals <code class="docutils literal notranslate"><span class="pre">total_log_lik_</span></code>; for categorical-only data it equals
+<code class="docutils literal notranslate"><span class="pre">cat_log_lik_</span></code>; for mixed data it is the heuristic
+<code class="docutils literal notranslate"><span class="pre">win_dist_</span> <span class="pre">/</span> <span class="pre">(total_dist_</span> <span class="pre">-</span> <span class="pre">win_dist_)</span> <span class="pre">*</span> <span class="pre">cat_log_lik_</span></code> (the ratio falls
+back to 100 when it is undefined or negative), which is not a
+likelihood.</p>
 </dd>
 <dt><strong>n_iter_</strong><span class="classifier">int</span></dt><dd><p>Number of iterations run in the best initialization.</p>
 </dd>
@@ -470,13 +483,21 @@ lower is better.</p>
 </dd>
 <dt><strong>num_levels_</strong><span class="classifier">ndarray of shape (n_cat,) of int32 or None</span></dt><dd><p>Number of distinct levels for each categorical feature.</p>
 </dd>
-<dt><strong>total_log_lik_</strong><span class="classifier">float or None</span></dt><dd><p>Continuous radial kernel density log-likelihood of the fitted solution.</p>
+<dt><strong>total_log_lik_</strong><span class="classifier">float or None</span></dt><dd><p>Sum over training samples of the best per-cluster log-likelihood from the
+final iteration. For mixed data this combines the continuous radial
+kernel density term and the weighted categorical term; for
+continuous-only data it is the radial kernel density term alone. None if
+no continuous features.</p>
 </dd>
-<dt><strong>cat_log_lik_</strong><span class="classifier">float or None</span></dt><dd><p>Categorical log-likelihood of the fitted solution.</p>
+<dt><strong>cat_log_lik_</strong><span class="classifier">float or None</span></dt><dd><p>Sum over training samples of the best per-cluster weighted categorical
+log-likelihood from the final iteration. None if no categorical features.</p>
 </dd>
-<dt><strong>win_dist_</strong><span class="classifier">float or None</span></dt><dd><p>Minimum continuous distance summary statistic.</p>
+<dt><strong>win_dist_</strong><span class="classifier">float or None</span></dt><dd><p>Sum over training samples of the weighted Euclidean distance to the
+continuous center of the assigned cluster, measured with the centers
+from the start of the final iteration. None if no continuous features.</p>
 </dd>
-<dt><strong>total_dist_</strong><span class="classifier">float or None</span></dt><dd><p>Total combined distance / objective value.</p>
+<dt><strong>total_dist_</strong><span class="classifier">float</span></dt><dd><p>Sum over training samples of the weighted Euclidean distance to the mean
+of the continuous features. 0.0 if no continuous features.</p>
 </dd>
 <dt><strong>fitted_min_dist_</strong><span class="classifier">ndarray of shape (n_samples,) or None</span></dt><dd><p>Minimum continuous distance from each training observation to fitted
 cluster centers.</p>
@@ -484,6 +505,11 @@ cluster centers.</p>
 </dl>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
+<p>If a cluster becomes empty during fitting, a randomly selected sample (drawn
+from clusters with more than one member) is moved into it, and the cluster’s
+parameters are estimated from that membership. The selection is controlled by
+<code class="docutils literal notranslate"><span class="pre">random_state</span></code>.</p>
 <p class="rubric">Methods</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
