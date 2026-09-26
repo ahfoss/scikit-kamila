@@ -17,6 +17,7 @@ struct KamilaResult {
     double win_dist = 0.0;
     double total_dist = 0.0;
     double objective = 0.0;
+    std::vector<double> final_min_dist;             // shape (N,) minimum continuous distance to final_means
 };
 
 // Core iterative loop function matching Rcpp kamilaLoopCpp
