@@ -790,6 +790,7 @@ def test_cpp_custom_weights():
     preds = kam.predict(X)
     np.testing.assert_array_equal(preds, kam.labels_)
 
+
 # =============================================================================
 # Out-of-Sample Prediction Parity Tests Matching R 'classifyKamila'
 # =============================================================================
