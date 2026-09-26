@@ -8,6 +8,13 @@ from sklearn.utils.validation import check_is_fitted
 from . import _kamila_cpp
 from ._validation import _validate_and_split_data
 
+try:
+    from sklearn.utils.validation import _check_feature_names
+except ImportError:  # pragma: no cover  (scikit-learn < 1.6)
+
+    def _check_feature_names(estimator, X, *, reset):
+        return estimator._check_feature_names(X, reset=reset)
+
 
 class KamilaClustering(ClusterMixin, BaseEstimator):
     r"""KAMILA clustering of mixed-type continuous and categorical data.
@@ -31,21 +38,29 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
     n_init : int, default=10
         Number of times the algorithm will be run with different centroid seeds.
         The final results will be the best output of n_init runs in terms of objective.
+        Ignored when ``init_means`` or ``init_log_probs`` is given; a single run
+        from that initialization is performed instead.
     max_iter : int, default=25
         Maximum number of iterations of the KAMILA algorithm for a single
         run/initialization.
     cat_bandwidth : float, default=0.025
-        Categorical smoothing parameter between 0 and 1.
+        Categorical smoothing parameter in [0, 1].
     con_weights : array-like of shape (n_con,), optional, default=None
         Weights for continuous features. If None, all receive weight 1.0.
     cat_weights : array-like of shape (n_cat,), optional, default=None
         Weights for categorical features. If None, all receive weight 1.0.
     random_state : int, RandomState instance, or None, default=None
-        Determines random number generation for centroid initializations.
+        Determines random number generation for centroid initializations and
+        for re-initializing clusters that become empty during fitting.
     init_means : array-like of shape (n_clusters, n_con), optional, default=None
         Explicit initial continuous cluster centers (for deterministic testing).
+        Must be finite. For data with both continuous and categorical features,
+        ``init_log_probs`` must be given as well.
     init_log_probs : list of array-like, optional, default=None
-        Explicit initial categorical log-probability matrices.
+        Explicit initial categorical log-probability matrices, one of shape
+        (n_clusters, n_levels) per categorical feature, with entries <= 0. For
+        data with both continuous and categorical features, ``init_means`` must
+        be given as well.
 
     Attributes
     ----------
@@ -57,8 +72,13 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
     labels_ : ndarray of shape (n_samples,)
         Labels of each point in the training set.
     inertia_ : float
-        Objective value of the best initialization; negative log-likelihood;
-        lower is better.
+        Objective value of the selected initialization; higher is better (this
+        is the opposite of scikit-learn's ``KMeans.inertia_``). For continuous-only
+        data it equals ``total_log_lik_``; for categorical-only data it equals
+        ``cat_log_lik_``; for mixed data it is the heuristic
+        ``win_dist_ / (total_dist_ - win_dist_) * cat_log_lik_`` (the ratio falls
+        back to 100 when it is undefined or negative), which is not a
+        likelihood.
     n_iter_ : int
         Number of iterations run in the best initialization.
     n_features_in_ : int
@@ -72,16 +92,31 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
     num_levels_ : ndarray of shape (n_cat,) of int32 or None
         Number of distinct levels for each categorical feature.
     total_log_lik_ : float or None
-        Continuous radial kernel density log-likelihood of the fitted solution.
+        Sum over training samples of the best per-cluster log-likelihood from the
+        final iteration. For mixed data this combines the continuous radial
+        kernel density term and the weighted categorical term; for
+        continuous-only data it is the radial kernel density term alone. None if
+        no continuous features.
     cat_log_lik_ : float or None
-        Categorical log-likelihood of the fitted solution.
+        Sum over training samples of the best per-cluster weighted categorical
+        log-likelihood from the final iteration. None if no categorical features.
     win_dist_ : float or None
-        Minimum continuous distance summary statistic.
-    total_dist_ : float or None
-        Total combined distance / objective value.
+        Sum over training samples of the weighted Euclidean distance to the
+        continuous center of the assigned cluster, measured with the centers
+        from the start of the final iteration. None if no continuous features.
+    total_dist_ : float
+        Sum over training samples of the weighted Euclidean distance to the mean
+        of the continuous features. 0.0 if no continuous features.
     fitted_min_dist_ : ndarray of shape (n_samples,) or None
         Minimum continuous distance from each training observation to fitted
         cluster centers.
+
+    Notes
+    -----
+    If a cluster becomes empty during fitting, a randomly selected sample (drawn
+    from clusters with more than one member) is moved into it, and the cluster's
+    parameters are estimated from that membership. The selection is controlled by
+    ``random_state``.
     """
 
     def __init__(
@@ -133,6 +168,66 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
                 "cat_bandwidth must be a non-negative number; got "
                 f"{self.cat_bandwidth!r}."
             )
+        if self.cat_bandwidth > 1:
+            raise ValueError(f"cat_bandwidth must be <= 1; got {self.cat_bandwidth!r}.")
+
+    def _validate_init(self, n_con, n_cat, num_levels):
+        """Validate explicit initializations against the data.
+
+        Returns contiguous float64 copies of ``init_means`` and ``init_log_probs``
+        (None where not given).
+        """
+        has_means = self.init_means is not None
+        has_log_probs = self.init_log_probs is not None
+
+        if has_means and n_con == 0:
+            raise ValueError("init_means was given but X has no continuous features.")
+        if has_log_probs and n_cat == 0:
+            raise ValueError(
+                "init_log_probs was given but X has no categorical features."
+            )
+        if n_con > 0 and n_cat > 0 and has_means != has_log_probs:
+            raise ValueError(
+                "init_means and init_log_probs must both be given for data with "
+                "continuous and categorical features."
+            )
+
+        init_means = None
+        if has_means:
+            init_means = np.ascontiguousarray(self.init_means, dtype=np.float64)
+            expected = (self.n_clusters, n_con)
+            if init_means.shape != expected:
+                raise ValueError(
+                    f"init_means must have shape {expected}; got "
+                    f"{init_means.shape}."
+                )
+            if not np.all(np.isfinite(init_means)):
+                raise ValueError("init_means must contain only finite values.")
+
+        init_log_probs = None
+        if has_log_probs:
+            if len(self.init_log_probs) != n_cat:
+                raise ValueError(
+                    f"init_log_probs must contain one matrix per categorical "
+                    f"feature ({n_cat}); got {len(self.init_log_probs)}."
+                )
+            init_log_probs = []
+            for q, lp in enumerate(self.init_log_probs):
+                lp = np.ascontiguousarray(lp, dtype=np.float64)
+                expected = (self.n_clusters, int(num_levels[q]))
+                if lp.shape != expected:
+                    raise ValueError(
+                        f"init_log_probs[{q}] must have shape {expected}; got "
+                        f"{lp.shape}."
+                    )
+                if np.any(np.isnan(lp)) or np.any(lp > 0):
+                    raise ValueError(
+                        f"init_log_probs[{q}] must contain log-probabilities "
+                        "(no NaN, all values <= 0)."
+                    )
+                init_log_probs.append(lp)
+
+        return init_means, init_log_probs
 
     def fit(self, X, y=None):
         """Compute KAMILA clustering.
@@ -158,7 +253,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
             num_levels,
             con_wgts,
             cat_wgts,
-            feature_names,
+            _,
         ) = _validate_and_split_data(
             X,
             categorical_features=self.categorical_features,
@@ -172,33 +267,19 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         n_cat = X_cat.shape[1] if X_cat is not None else 0
 
         self._validate_parameters(n_samples)
+        init_means_arr, init_lp_list = self._validate_init(n_con, n_cat, num_levels)
 
         self.n_features_in_ = n_features
-        if feature_names is not None:
-            self.feature_names_in_ = feature_names
+        _check_feature_names(self, X, reset=True)
         self.is_categorical_ = is_categorical
         self.categories_ = categories
         self.num_levels_ = num_levels
 
         # Check explicit vs random initializations
-        has_explicit_init = (self.init_means is not None) or (
-            self.init_log_probs is not None
-        )
+        has_explicit_init = (init_means_arr is not None) or (init_lp_list is not None)
+        rng = check_random_state(self.random_state)
 
         if has_explicit_init:
-            init_means_arr = (
-                np.ascontiguousarray(self.init_means, dtype=np.float64)
-                if self.init_means is not None
-                else None
-            )
-            init_lp_list = (
-                [
-                    np.ascontiguousarray(lp, dtype=np.float64)
-                    for lp in self.init_log_probs
-                ]
-                if self.init_log_probs is not None
-                else None
-            )
             best_res = _kamila_cpp.kamila_loop_cpp(
                 con_data=X_con,
                 cat_data=X_cat,
@@ -215,9 +296,9 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
                 max_iter=int(self.max_iter),
                 has_con=bool(n_con > 0),
                 has_cat=bool(n_cat > 0),
+                seed=rng.randint(np.iinfo(np.int32).max),
             )
         else:
-            rng = check_random_state(self.random_state)
             best_res = None
             best_obj = -float("inf")
 
@@ -260,6 +341,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
                     max_iter=int(self.max_iter),
                     has_con=bool(n_con > 0),
                     has_cat=bool(n_cat > 0),
+                    seed=rng.randint(np.iinfo(np.int32).max),
                 )
 
                 if best_res is None or (
@@ -316,6 +398,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
             Index of the cluster each sample belongs to.
         """
         check_is_fitted(self, attributes=["labels_"])
+        _check_feature_names(self, X, reset=False)
 
         (
             X_con,

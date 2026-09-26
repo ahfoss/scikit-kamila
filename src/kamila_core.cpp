@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <numeric>
+#include <random>
 #include <vector>
 
 #ifndef M_1_SQRT_2PI
@@ -40,7 +41,9 @@ void compute_radial_kde_log_liks(
     }
     double hi = (n_radii > 1) ? std::sqrt(var_r / (n_radii - 1.0)) : 0.0;
 
-    // Type 7 quantile using std::nth_element
+    // Type 7 quantiles on the sorted radii
+    std::sort(r_sorted.begin(), r_sorted.end());
+
     double index25 = 1.0 + (n_radii - 1.0) * 0.25;
     int lo25 = std::max(0, std::min(n_radii - 1, static_cast<int>(std::floor(index25)) - 1));
     int hi25 = std::max(0, std::min(n_radii - 1, static_cast<int>(std::ceil(index25)) - 1));
@@ -51,15 +54,11 @@ void compute_radial_kde_log_liks(
     int hi75 = std::max(0, std::min(n_radii - 1, static_cast<int>(std::ceil(index75)) - 1));
     double g75 = index75 - std::floor(index75);
 
-    std::nth_element(r_sorted.begin(), r_sorted.begin() + lo25, r_sorted.end());
     double v_lo25 = r_sorted[lo25];
-    std::nth_element(r_sorted.begin() + lo25 + 1, r_sorted.begin() + hi25, r_sorted.end());
     double v_hi25 = r_sorted[hi25];
     double q25 = (lo25 == hi25) ? v_lo25 : ((1.0 - g25) * v_lo25 + g25 * v_hi25);
 
-    std::nth_element(r_sorted.begin() + hi25 + 1, r_sorted.begin() + lo75, r_sorted.end());
     double v_lo75 = r_sorted[lo75];
-    std::nth_element(r_sorted.begin() + lo75 + 1, r_sorted.begin() + hi75, r_sorted.end());
     double v_hi75 = r_sorted[hi75];
     double q75 = (lo75 == hi75) ? v_lo75 : ((1.0 - g75) * v_lo75 + g75 * v_hi75);
     double iqr = q75 - q25;
@@ -205,9 +204,12 @@ KamilaResult kamila_loop(
     double cat_bw,
     int max_iter,
     bool has_con,
-    bool has_cat
+    bool has_cat,
+    std::uint64_t seed
 ) {
     KamilaResult result;
+    std::mt19937_64 rng(seed);
+    std::vector<int> eligible;
     int nn = n_samples;
     int pp = has_con ? n_con : 0;
     int qq = has_cat ? n_cat : 0;
@@ -221,6 +223,7 @@ KamilaResult kamila_loop(
     std::vector<int> memb_old(nn, -1);
     std::vector<int> memb_new(nn, 0);
     std::vector<double> count_vec(kk, 0.0);
+    std::vector<double> mean_sums(has_con ? (kk * pp) : 0, 0.0);
 
     // Current means: shape (kk, pp) row-major
     std::vector<double> current_means(has_con ? (kk * pp) : 0, 0.0);
@@ -396,19 +399,37 @@ KamilaResult kamila_loop(
             count_vec[max_idx] += 1.0;
         }
 
-        // 4. Update continuous means
+        // Re-initialize each empty cluster by moving a randomly selected point into
+        // it, drawn from clusters with more than one member so that no other
+        // cluster empties. Its parameters are then estimated from that membership.
+        // rng() % n is used instead of std::uniform_int_distribution so results
+        // for a given seed are identical across standard library implementations.
+        for (int j = 0; j < kk; ++j) {
+            if (count_vec[j] > 0.0) continue;
+            eligible.clear();
+            for (int i = 0; i < nn; ++i) {
+                if (count_vec[memb_new[i]] > 1.0) eligible.push_back(i);
+            }
+            if (eligible.empty()) break;  // fewer points than clusters
+            int i = eligible[rng() % eligible.size()];
+            count_vec[memb_new[i]] -= 1.0;
+            memb_new[i] = j;
+            count_vec[j] = 1.0;
+        }
+
+        // 4. Update continuous means (an empty cluster keeps its previous mean)
         if (has_con) {
-            std::fill(current_means.begin(), current_means.end(), 0.0);
+            std::fill(mean_sums.begin(), mean_sums.end(), 0.0);
             for (int i = 0; i < nn; ++i) {
                 int cl = memb_new[i];
                 for (int p = 0; p < pp; ++p) {
-                    current_means[cl * pp + p] += con_data[i * pp + p];
+                    mean_sums[cl * pp + p] += con_data[i * pp + p];
                 }
             }
             for (int j = 0; j < kk; ++j) {
                 if (count_vec[j] > 0.0) {
                     for (int p = 0; p < pp; ++p) {
-                        current_means[j * pp + p] /= count_vec[j];
+                        current_means[j * pp + p] = mean_sums[j * pp + p] / count_vec[j];
                     }
                 }
             }
