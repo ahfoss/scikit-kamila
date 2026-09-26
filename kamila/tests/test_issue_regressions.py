@@ -1,4 +1,6 @@
-"""Regression tests for bugs reported in GitHub issues #16, #17, #19, #20 and #22."""
+"""Regression tests for bugs reported in GitHub issues #16-#22 and #26."""
+
+import warnings
 
 import numpy as np
 import pytest
@@ -263,7 +265,11 @@ def test_categorical_probabilities_are_valid(cat_bandwidth):
     """Every accepted bandwidth yields proper probability distributions."""
     km = KamilaClustering(
         2, categorical_features=[2], cat_bandwidth=cat_bandwidth, random_state=0
-    ).fit(_mixed_data())
+    )
+    with warnings.catch_warnings():
+        # cat_bandwidth=1.0 exceeds the (K - 1) / K bound from #26.
+        warnings.filterwarnings("ignore", "cat_bandwidth=", UserWarning)
+        km.fit(_mixed_data())
 
     for log_probs in km.cluster_centers_cat_:
         probs = np.exp(log_probs)
@@ -350,3 +356,86 @@ def test_fit_on_sample_sizes_with_integer_quartile_index(n_samples):
     assert np.isfinite(km.total_log_lik_)
     np.testing.assert_array_equal(km.labels_[perm], km_perm.labels_)
     assert km.total_log_lik_ == pytest.approx(km_perm.total_log_lik_)
+
+
+# =============================================================================
+# #26: Warn when cat_bandwidth exceeds (m - 1) / m
+# =============================================================================
+
+
+def _cat_data(n_levels, seed=0):
+    """Two blobs plus one categorical column with ``n_levels`` levels."""
+    rng = np.random.default_rng(seed)
+    return np.column_stack([_two_blobs(seed), rng.integers(0, n_levels, 200)])
+
+
+@pytest.mark.parametrize(
+    "n_clusters, n_levels, cat_bandwidth, match",
+    [
+        # (K - 1) / K = 0.5 is the binding bound.
+        (2, 5, 0.6, r"0\.5, where m=2 is n_clusters"),
+        # (L - 1) / L = 0.5 is the binding bound.
+        (5, 2, 0.6, r"0\.5, where m=2 is the number of levels of categorical"),
+        # With K = 3 and L = 4, 0.7 exceeds only the cluster bound 2/3.
+        (3, 4, 0.7, r"0\.6667, where m=3 is n_clusters"),
+        # With K = 4 and L = 3, 0.7 exceeds only the level bound 2/3.
+        (4, 3, 0.7, r"0\.6667, where m=3 is the number of levels of categorical"),
+        # A single cluster is not smoothed across clusters; levels still are.
+        (1, 3, 1.0, r"where m=3 is the number of levels of categorical feature 0"),
+    ],
+)
+def test_cat_bandwidth_above_bound_warns(n_clusters, n_levels, cat_bandwidth, match):
+    km = KamilaClustering(
+        n_clusters,
+        categorical_features=[2],
+        cat_bandwidth=cat_bandwidth,
+        n_init=1,
+        random_state=0,
+    )
+    with pytest.warns(UserWarning, match=match) as record:
+        km.fit(_cat_data(n_levels))
+    assert len(record) == 1
+    # The warning points at the caller of fit, not at kamila internals.
+    assert record[0].filename == __file__
+
+
+def test_cat_bandwidth_warning_names_offending_feature():
+    rng = np.random.default_rng(0)
+    X = np.column_stack(
+        [rng.integers(0, 5, 200), rng.integers(0, 2, 200), rng.integers(0, 5, 200)]
+    )
+    km = KamilaClustering(
+        5, categorical_features=[0, 1, 2], cat_bandwidth=0.6, random_state=0
+    )
+    with pytest.warns(UserWarning, match="categorical feature 1"):
+        km.fit(X)
+
+
+@pytest.mark.parametrize(
+    "n_clusters, n_levels, cat_bandwidth",
+    [
+        (2, 3, 0.5),  # exactly at the (K - 1) / K bound
+        (3, 2, 0.5),  # exactly at the (L - 1) / L bound
+        (3, 4, 0.6),  # below both bounds
+        (2, 3, 0.025),  # default
+        (1, 1, 1.0),  # no neighbors in either direction
+    ],
+)
+def test_cat_bandwidth_within_bound_does_not_warn(n_clusters, n_levels, cat_bandwidth):
+    km = KamilaClustering(
+        n_clusters,
+        categorical_features=[2],
+        cat_bandwidth=cat_bandwidth,
+        n_init=1,
+        random_state=0,
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        km.fit(_cat_data(n_levels))
+
+
+def test_cat_bandwidth_ignored_for_continuous_only_data():
+    """Without categorical features the bandwidth is unused, so no warning."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        KamilaClustering(2, cat_bandwidth=1.0, random_state=0).fit(_two_blobs())

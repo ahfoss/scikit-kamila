@@ -1,5 +1,7 @@
 """KAMILA: KAy-means for MIxed LArge datasets clustering."""
 
+import warnings
+
 import numpy as np
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils import check_random_state
@@ -44,7 +46,15 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         Maximum number of iterations of the KAMILA algorithm for a single
         run/initialization.
     cat_bandwidth : float, default=0.025
-        Categorical smoothing parameter in [0, 1].
+        Categorical smoothing parameter in [0, 1]. Category counts are smoothed
+        across clusters and then across levels; each count keeps weight
+        ``1 - cat_bandwidth`` and every other cluster (level) receives
+        ``cat_bandwidth / (m - 1)``, where ``m`` is ``n_clusters`` (the number of
+        levels). A ``UserWarning`` is raised during :meth:`fit` if
+        ``cat_bandwidth > (m - 1) / m`` for ``n_clusters`` or any categorical
+        feature's number of levels, because a count would then be influenced
+        more by each neighbor than by itself. Small values (e.g. the default)
+        are recommended.
     con_weights : array-like of shape (n_con,), optional, default=None
         Weights for continuous features. If None, all receive weight 1.0.
     cat_weights : array-like of shape (n_cat,), optional, default=None
@@ -171,6 +181,32 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         if self.cat_bandwidth > 1:
             raise ValueError(f"cat_bandwidth must be <= 1; got {self.cat_bandwidth!r}.")
 
+    def _check_cat_bandwidth_smoothing(self, num_levels):
+        """Warn if ``cat_bandwidth`` weights neighbors above the cell itself.
+
+        Smoothing across the ``m`` clusters (or ``m`` levels) keeps weight
+        ``1 - cat_bandwidth`` on each cell and gives ``cat_bandwidth / (m - 1)``
+        to every other cell. Beyond ``(m - 1) / m`` a cell is more influenced by
+        each neighbor than by itself, so the update is no longer smoothing.
+        """
+        sizes = [("n_clusters", int(self.n_clusters))]
+        sizes += [
+            (f"the number of levels of categorical feature {q}", int(n_lev))
+            for q, n_lev in enumerate(num_levels)
+        ]
+        for name, m in sizes:
+            if m > 1 and self.cat_bandwidth > (m - 1) / m:
+                warnings.warn(
+                    f"cat_bandwidth={self.cat_bandwidth!r} exceeds (m - 1) / m = "
+                    f"{(m - 1) / m:.4g}, where m={m} is {name}. Each category's "
+                    "smoothed count is then influenced more by each of its "
+                    "neighbors than by itself, so this is no longer smoothing. "
+                    "Consider a smaller cat_bandwidth.",
+                    UserWarning,
+                    stacklevel=3,
+                )
+                return
+
     def _validate_init(self, n_con, n_cat, num_levels):
         """Validate explicit initializations against the data.
 
@@ -268,6 +304,8 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
 
         self._validate_parameters(n_samples)
         init_means_arr, init_lp_list = self._validate_init(n_con, n_cat, num_levels)
+        if n_cat > 0:
+            self._check_cat_bandwidth_smoothing(num_levels)
 
         self.n_features_in_ = n_features
         _check_feature_names(self, X, reset=True)

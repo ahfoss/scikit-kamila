@@ -110,7 +110,8 @@ Key Hyperparameters
 * ``max_iter`` (*int*, default=25):
   Maximum number of iterations allowed per initialization.
 * ``cat_bandwidth`` (*float*, default=0.025):
-  Categorical smoothing parameter :math:`\delta \in (0, 1)`.
+  Categorical smoothing parameter :math:`\delta \in [0, 1]`. Keep it small: see
+  :ref:`cat_bandwidth_choice` below.
 * ``con_weights`` (*array-like of shape (n_con,)*, default=None):
   Optional per-feature weights for continuous variables.
 * ``cat_weights`` (*array-like of shape (n_cat,)*, default=None):
@@ -192,6 +193,35 @@ smoothed by categorical bandwidth :math:`\delta`:
 .. math::
 
     \log P(\mathbf{x}_i^{(cat)} \mid k) = \sum_{j=1}^{P_{cat}} w_j^{(cat)} \log \tilde{p}_{k j}(x_{ij}^{(cat)})
+
+The smoothed counts :math:`\tilde{n}` behind :math:`\tilde{p}` are computed in two passes,
+first across the :math:`K` clusters and then across the :math:`L_j` levels of the
+variable. Each pass keeps weight :math:`1 - \delta` on a cell and spreads weight
+:math:`\delta / (m - 1)` to each of the other :math:`m - 1` cells, with
+:math:`m = K` or :math:`m = L_j`:
+
+.. math::
+
+    \tilde{n}_{c} = (1 - \delta)\, n_{c} + \frac{\delta}{m - 1} \sum_{c' \neq c} n_{c'}
+
+.. _cat_bandwidth_choice:
+
+Choosing ``cat_bandwidth``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Smoothing only makes sense while a cell outweighs each of its neighbors, i.e. while
+:math:`1 - \delta \geq \delta / (m - 1)`, which is equivalent to
+
+.. math::
+
+    \delta \leq \frac{m - 1}{m}.
+
+At larger values a category's smoothed count is influenced more by each neighboring
+cluster (or level) than by itself. :meth:`~kamila.KamilaClustering.fit` issues a
+``UserWarning`` when :math:`\delta > (m - 1)/m` for :math:`m = K` or for the number of
+levels of any categorical variable. For example, with two clusters or a binary
+variable the bound is :math:`0.5`. Small values such as the default of 0.025 are
+recommended.
 
 Points are iteratively reassigned to minimize the combined objective criterion until
 cluster assignments stabilize.
