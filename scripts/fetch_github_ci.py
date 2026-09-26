@@ -16,8 +16,98 @@ import re
 import subprocess
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 import zipfile
+
+
+class AuthRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Prevent Authorization header from being leaked to external CDN redirects."""
+
+    def http_error_302(self, req, fp, code, msg, headers):
+        loc = headers.get("Location")
+        if loc:
+            new_host = urllib.parse.urlparse(loc).netloc.lower()
+            if not new_host.endswith("github.com") and not new_host.endswith(
+                "githubusercontent.com"
+            ):
+                clean_headers = {
+                    k: v for k, v in req.headers.items() if k.lower() != "authorization"
+                }
+                new_req = urllib.request.Request(loc, headers=clean_headers)
+                return urllib.request.urlopen(new_req)
+        return super().http_error_302(req, fp, code, msg, headers)
+
+    http_error_301 = http_error_302
+    http_error_303 = http_error_302
+    http_error_307 = http_error_302
+    http_error_308 = http_error_302
+
+
+_opener = urllib.request.build_opener(AuthRedirectHandler)
+
+
+def api_request(url, token=None):
+    """Make an HTTP GET request to GitHub API."""
+    headers = {
+        "User-Agent": "scikit-kamila-ci-reader/1.0",
+        "Accept": "application/vnd.github.v3+json",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        with _opener.open(req) as resp:
+            return resp.read()
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        print(f"[-] HTTP Error {e.code}: {e.reason}\n{body}", file=sys.stderr)
+        return None
+    except Exception as e:
+        print(f"[-] Request error: {e}", file=sys.stderr)
+        return None
+
+
+def get_workflow_runs(repo, token=None, branch=None, limit=5):
+    """Fetch recent workflow runs."""
+    url = f"https://api.github.com/repos/{repo}/actions/runs?per_page={limit}"
+    if branch:
+        url += f"&branch={branch}"
+    data = api_request(url, token=token)
+    if not data:
+        return []
+    return json.loads(data.decode("utf-8")).get("workflow_runs", [])
+
+
+def get_jobs_for_run(repo, run_id, token=None):
+    """Fetch all jobs for a specific workflow run."""
+    url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100"
+    data = api_request(url, token=token)
+    if not data:
+        return []
+    return json.loads(data.decode("utf-8")).get("jobs", [])
+
+
+def get_run_logs_zip(repo, run_id, token=None):
+    """Download workflow run logs as a zip archive."""
+    url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/logs"
+    data = api_request(url, token=token)
+    if data:
+        try:
+            return zipfile.ZipFile(io.BytesIO(data))
+        except Exception as e:
+            print(f"[-] Failed to read zip archive: {e}", file=sys.stderr)
+    return None
+
+
+def get_job_log(repo, job_id, token=None):
+    """Fetch raw log text for an individual job."""
+    url = f"https://api.github.com/repos/{repo}/actions/jobs/{job_id}/logs"
+    data = api_request(url, token=token)
+    if data:
+        return data.decode("utf-8", errors="replace")
+    return None
 
 
 def get_git_credentials():
@@ -66,60 +156,6 @@ def get_current_git_info():
         pass
 
     return repo, branch
-
-
-def api_request(url, token=None):
-    """Make an HTTP GET request to GitHub API."""
-    headers = {
-        "User-Agent": "scikit-kamila-ci-reader/1.0",
-        "Accept": "application/vnd.github.v3+json",
-    }
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-
-    req = urllib.request.Request(url, headers=headers)
-    try:
-        with urllib.request.urlopen(req) as resp:
-            return resp.read()
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", errors="replace")
-        print(f"[-] HTTP Error {e.code}: {e.reason}\n{body}", file=sys.stderr)
-        return None
-    except Exception as e:
-        print(f"[-] Request error: {e}", file=sys.stderr)
-        return None
-
-
-def get_workflow_runs(repo, token=None, branch=None, limit=5):
-    """Fetch recent workflow runs."""
-    url = f"https://api.github.com/repos/{repo}/actions/runs?per_page={limit}"
-    if branch:
-        url += f"&branch={branch}"
-    data = api_request(url, token=token)
-    if not data:
-        return []
-    return json.loads(data.decode("utf-8")).get("workflow_runs", [])
-
-
-def get_jobs_for_run(repo, run_id, token=None):
-    """Fetch all jobs for a specific workflow run."""
-    url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100"
-    data = api_request(url, token=token)
-    if not data:
-        return []
-    return json.loads(data.decode("utf-8")).get("jobs", [])
-
-
-def get_run_logs_zip(repo, run_id, token=None):
-    """Download workflow run logs as a zip archive."""
-    url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/logs"
-    data = api_request(url, token=token)
-    if data:
-        try:
-            return zipfile.ZipFile(io.BytesIO(data))
-        except Exception as e:
-            print(f"[-] Failed to read zip archive: {e}", file=sys.stderr)
-    return None
 
 
 def extract_failure_summary(log_text):
@@ -275,13 +311,9 @@ def main():
     print("[!] DOWNLOADING AND PARSING LOGS FOR FAILED JOBS:")
     print("=" * 80)
 
-    # Download zip archive containing all logs
+    # Download zip archive containing all logs, or fetch per-job logs
     log_zip = get_run_logs_zip(repo, target_run_id, token=token)
-    if not log_zip:
-        print("[-] Could not retrieve logs zip archive.")
-        return
-
-    zip_files = log_zip.namelist()
+    zip_files = log_zip.namelist() if log_zip else []
 
     for j in failed_jobs:
         job_name = j.get("name")
@@ -292,25 +324,32 @@ def main():
         print(f"### Job: {job_name} (ID: {j.get('id')})")
         print("#" * 80)
 
-        # Match log filename in zip (e.g. "0_ubuntu-latest - Python 3.10.txt")
-        matched_file = None
-        for zf in zip_files:
-            # Check if job name is in the zip filename
-            if job_name in zf and zf.endswith(".txt") and "system.txt" not in zf:
-                matched_file = zf
-                break
-
-        if not matched_file:
+        log_content = None
+        if log_zip:
+            # Match log filename in zip (e.g. "0_ubuntu-latest - Python 3.10.txt")
+            matched_file = None
             for zf in zip_files:
-                if job_name in zf:
+                if job_name in zf and zf.endswith(".txt") and "system.txt" not in zf:
                     matched_file = zf
                     break
+            if not matched_file:
+                for zf in zip_files:
+                    if job_name in zf:
+                        matched_file = zf
+                        break
+            if matched_file:
+                log_content = log_zip.read(matched_file).decode(
+                    "utf-8", errors="replace"
+                )
 
-        if matched_file:
-            log_content = log_zip.read(matched_file).decode("utf-8", errors="replace")
+        if not log_content:
+            # Fallback to direct job log API
+            log_content = get_job_log(repo, j.get("id"), token=token)
+
+        if log_content:
             print(extract_failure_summary(log_content))
         else:
-            print(f"[-] Could not find matching log file in zip for {job_name}")
+            print(f"[-] Could not retrieve logs for {job_name}")
 
 
 if __name__ == "__main__":
