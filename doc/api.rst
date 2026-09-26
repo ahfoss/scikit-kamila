@@ -25,6 +25,6 @@ Utilities
    :toctree: generated/
    :template: function.rst
 
-     utils.discovery.all_estimators
-     utils.discovery.all_displays
-     utils.discovery.all_functions
+   utils.discovery.all_estimators
+   utils.discovery.all_displays
+   utils.discovery.all_functions
