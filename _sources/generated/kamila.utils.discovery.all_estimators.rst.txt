@@ -1,0 +1,12 @@
+﻿all_estimators
+=========================================================
+
+.. currentmodule:: kamila.utils.discovery
+
+.. autofunction:: all_estimators
+
+.. include:: kamila.utils.discovery.all_estimators.examples
+
+.. raw:: html
+
+    <div style='clear:both'></div>

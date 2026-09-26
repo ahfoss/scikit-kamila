@@ -1,0 +1,12 @@
+﻿all_displays
+=======================================================
+
+.. currentmodule:: kamila.utils.discovery
+
+.. autofunction:: all_displays
+
+.. include:: kamila.utils.discovery.all_displays.examples
+
+.. raw:: html
+
+    <div style='clear:both'></div>

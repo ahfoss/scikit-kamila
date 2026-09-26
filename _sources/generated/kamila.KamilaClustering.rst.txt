@@ -1,0 +1,41 @@
+﻿KamilaClustering
+=====================================
+
+.. currentmodule:: kamila
+
+.. autoclass:: KamilaClustering
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      
+      
+        ~KamilaClustering.fit
+      
+      
+        ~KamilaClustering.fit_predict
+      
+      
+        ~KamilaClustering.get_metadata_routing
+      
+      
+        ~KamilaClustering.get_params
+      
+      
+        ~KamilaClustering.predict
+      
+      
+        ~KamilaClustering.set_params
+      
+   
+   
+
+.. include:: kamila.KamilaClustering.examples
+
+.. raw:: html
+
+    <div style='clear:both'></div>

@@ -1,0 +1,12 @@
+﻿all_functions
+========================================================
+
+.. currentmodule:: kamila.utils.discovery
+
+.. autofunction:: all_functions
+
+.. include:: kamila.utils.discovery.all_functions.examples
+
+.. raw:: html
+
+    <div style='clear:both'></div>
