@@ -4,7 +4,7 @@ from sklearn.utils.estimator_checks import (
     estimator_checks_generator,
 )
 
-from kamila.utils.discovery import all_estimators
+from kamila.utils._discovery import all_estimators
 
 _checks = [
     item
