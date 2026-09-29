@@ -1,0 +1,47 @@
+name: scikit-learn nightly
+
+# Early warning for breakage in the upcoming scikit-learn release. Failures
+# here are informational and do not block merges.
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"  # Mondays 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  test-sklearn-nightly:
+    name: ubuntu-latest - Python 3.13 - scikit-learn nightly
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install package and test dependencies
+        run: python -m pip install -e ".[test]"
+
+      # The nightly is a pre-release of a version outside kamila's pinned
+      # range, so pip will warn about the conflict; that is expected.
+      - name: Install scikit-learn nightly
+        run: |
+          python -m pip install --pre --upgrade --upgrade-strategy only-if-needed \
+            --extra-index-url https://pypi.anaconda.org/scientific-python-nightly-wheels/simple \
+            scikit-learn
+          python -c "import sklearn; print('scikit-learn', sklearn.__version__)"
+
+      - name: Run pytest
+        run: python -m pytest -v kamila

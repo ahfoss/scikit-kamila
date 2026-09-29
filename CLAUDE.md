@@ -49,4 +49,4 @@ Correctness is primarily established by matching the reference R implementation.
 
 `kamila/tests/test_common.py` runs scikit-learn's `parametrize_with_checks` on every estimator found by `kamila/utils/discovery.py`. `check_array_api_input` is skipped unless `SCIPY_ARRAY_API=1` is set and `array-api-compat` is installed.
 
-Supported scikit-learn versions are 1.6 through 1.9.x, pinned `>=1.6,<1.10` in `pyproject.toml`; 1.9.1 is the latest version tested. Don't add compatibility shims for versions older than 1.6.
+Supported scikit-learn versions are 1.6 through 1.9.x, pinned `>=1.6,<1.10` in `pyproject.toml`; 1.9.1 is the latest version tested. Don't add compatibility shims for versions older than 1.6. `.github/workflows/nightly.yml` also runs the tests against the scikit-learn nightly build (weekly and on push/PR); it is allowed to fail and serves as an early warning for the next release.
