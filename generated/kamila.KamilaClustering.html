@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>KamilaClustering &#8212; scikit-kamila 0.1.0.dev25+g4ed0d32a5 documentation</title>
+    <title>KamilaClustering &#8212; scikit-kamila 0.1.0.dev26+g1ff68ad20 documentation</title>
   
   
   
@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
 
-    <script src="../_static/documentation_options.js?v=b4dd09de"></script>
+    <script src="../_static/documentation_options.js?v=d3af9428"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/sg-tags.js?v=d80f6fa4"></script>
@@ -129,8 +129,8 @@
       
     
     
-    <img src="../_static/logo.png" class="logo__image only-light" alt="scikit-kamila 0.1.0.dev25+g4ed0d32a5 documentation - Home"/>
-    <img src="../_static/logo.png" class="logo__image only-dark pst-js-only" alt="scikit-kamila 0.1.0.dev25+g4ed0d32a5 documentation - Home"/>
+    <img src="../_static/logo.png" class="logo__image only-light" alt="scikit-kamila 0.1.0.dev26+g1ff68ad20 documentation - Home"/>
+    <img src="../_static/logo.png" class="logo__image only-dark pst-js-only" alt="scikit-kamila 0.1.0.dev26+g1ff68ad20 documentation - Home"/>
   
   
 </a></div>
@@ -434,7 +434,15 @@ from that initialization is performed instead.</p>
 <dt><strong>max_iter</strong><span class="classifier">int, default=25</span></dt><dd><p>Maximum number of iterations of the KAMILA algorithm for a single
 run/initialization.</p>
 </dd>
-<dt><strong>cat_bandwidth</strong><span class="classifier">float, default=0.025</span></dt><dd><p>Categorical smoothing parameter in [0, 1].</p>
+<dt><strong>cat_bandwidth</strong><span class="classifier">float, default=0.025</span></dt><dd><p>Categorical smoothing parameter in [0, 1]. Category counts are smoothed
+across clusters and then across levels; each count keeps weight
+<code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">-</span> <span class="pre">cat_bandwidth</span></code> and every other cluster (level) receives
+<code class="docutils literal notranslate"><span class="pre">cat_bandwidth</span> <span class="pre">/</span> <span class="pre">(m</span> <span class="pre">-</span> <span class="pre">1)</span></code>, where <code class="docutils literal notranslate"><span class="pre">m</span></code> is <code class="docutils literal notranslate"><span class="pre">n_clusters</span></code> (the number of
+levels). A <code class="docutils literal notranslate"><span class="pre">UserWarning</span></code> is raised during <a class="reference internal" href="#kamila.KamilaClustering.fit" title="kamila.KamilaClustering.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit()</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">cat_bandwidth</span> <span class="pre">&gt;</span> <span class="pre">(m</span> <span class="pre">-</span> <span class="pre">1)</span> <span class="pre">/</span> <span class="pre">m</span></code> for <code class="docutils literal notranslate"><span class="pre">n_clusters</span></code> or any categorical
+feature’s number of levels, because a count would then be influenced
+more by each neighbor than by itself. Small values (e.g. the default)
+are recommended.</p>
 </dd>
 <dt><strong>con_weights</strong><span class="classifier">array-like of shape (n_con,), optional, default=None</span></dt><dd><p>Weights for continuous features. If None, all receive weight 1.0.</p>
 </dd>
