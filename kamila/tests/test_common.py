@@ -1,14 +1,10 @@
 import pytest
 import sklearn
 from sklearn.utils.estimator_checks import _get_check_estimator_ids
-from sklearn.utils.estimator_checks import parametrize_with_checks
 from sklearn.utils.fixes import parse_version
 
 from kamila import KamilaClustering
 from kamila.utils._discovery import all_estimators
-
-
-@parametrize_with_checks([est_cls() for _, est_cls in all_estimators()])
 
 _SKLEARN_VERSION = parse_version(sklearn.__version__)
 
@@ -60,7 +56,6 @@ except ImportError:  # pragma: no cover  (scikit-learn < 1.6)
     [item for est in _estimators for item in _checks(est)],
     ids=_get_check_estimator_ids,
 )
-
 def test_estimators(estimator, check):
     """Check the compatibility with scikit-learn API"""
     check(estimator)
