@@ -5,7 +5,7 @@
 
 import pytest
 
-from kamila.utils.discovery import all_displays, all_estimators, all_functions
+from kamila.utils._discovery import all_displays, all_estimators, all_functions
 
 
 def test_all_estimators():
@@ -40,7 +40,7 @@ def test_all_estimators():
 def test_is_abstract():
     from abc import ABC, abstractmethod
 
-    from kamila.utils.discovery import _is_abstract
+    from kamila.utils._discovery import _is_abstract
 
     class ConcreteClass:
         pass
