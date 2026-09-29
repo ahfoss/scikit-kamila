@@ -3,8 +3,8 @@ import sklearn
 from sklearn.utils.estimator_checks import _get_check_estimator_ids
 from sklearn.utils.fixes import parse_version
 
-from kamila.utils._discovery import all_estimators
 from kamila import KamilaClustering
+from kamila.utils._discovery import all_estimators
 
 _SKLEARN_VERSION = parse_version(sklearn.__version__)
 
