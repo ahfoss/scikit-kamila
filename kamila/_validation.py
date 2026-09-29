@@ -102,6 +102,25 @@ def _check_categorical_features(
     )
 
 
+def _is_missing_scalar(val):
+    """Return True for None, NaN, infinities, and pandas' NA / NaT."""
+    if val is None:
+        return True
+    if isinstance(val, (float, np.floating)):
+        return not np.isfinite(val)
+    # pandas is optional, so identify its missing-value singletons by type name.
+    return type(val).__name__ in ("NAType", "NaTType")
+
+
+def _missing_mask(col):
+    """Boolean mask of missing or non-finite entries in a 1D column."""
+    if col.dtype.kind == "f":
+        return ~np.isfinite(col)
+    if col.dtype.kind == "O":
+        return np.fromiter((_is_missing_scalar(v) for v in col), bool, len(col))
+    return np.zeros(len(col), dtype=bool)
+
+
 def _validate_and_split_data(
     X,
     categorical_features=None,
@@ -148,26 +167,28 @@ def _validate_and_split_data(
             "Use X.toarray() to convert to a dense numpy array."
         )
 
-    if hasattr(X, "ndim") and X.ndim != 2:
-        shape = getattr(X, "shape", None)
-        raise ValueError(
-            f"Expected 2D array, got 1D array instead: shape={shape}.\n"
-            "Reshape your data either using array.reshape(-1, 1) "
-            "if your data has a single feature "
-            "or array.reshape(1, -1) if it contains a single sample."
-        )
-
-    if hasattr(X, "shape"):
-        n_samples, n_features = X.shape[0], X.shape[1]
-    else:
-        X_list = list(X)
-        n_samples = len(X_list)
-        if n_samples == 0:
+    if not hasattr(X, "shape"):
+        # Lists and other sequences: convert once so shape checks below apply.
+        X = np.asarray(X)
+        if X.shape == (0,):
             raise ValueError(
                 "Found array with 0 sample(s) (shape=(0, 0)) "
                 "while a minimum of 1 is required."
             )
-        n_features = len(X_list[0]) if hasattr(X_list[0], "__len__") else 0
+
+    if X.ndim != 2:
+        if X.ndim == 1:
+            raise ValueError(
+                f"Expected 2D array, got 1D array instead: shape={X.shape}.\n"
+                "Reshape your data either using array.reshape(-1, 1) "
+                "if your data has a single feature "
+                "or array.reshape(1, -1) if it contains a single sample."
+            )
+        raise ValueError(
+            f"Expected 2D array, got {X.ndim}D array instead: shape={X.shape}."
+        )
+
+    n_samples, n_features = X.shape[0], X.shape[1]
 
     if n_samples == 0:
         raise ValueError(
@@ -219,8 +240,10 @@ def _validate_and_split_data(
                     f"con_weights shape {con_wgts.shape} does not match number of "
                     f"continuous features ({n_con})."
                 )
-            if np.any(con_wgts <= 0):
-                raise ValueError("All con_weights must be strictly positive.")
+            if not np.all(np.isfinite(con_wgts)) or np.any(con_wgts <= 0):
+                raise ValueError(
+                    "All con_weights must be finite and strictly positive."
+                )
         else:
             con_wgts = np.ones(n_con, dtype=np.float64)
     else:
@@ -240,10 +263,25 @@ def _validate_and_split_data(
                 arr = np.asarray(X)
                 col = arr[:, c_idx]
 
+            if np.any(_missing_mask(col)):
+                raise ValueError(
+                    f"Categorical feature {c_idx} contains missing (None or NaN) "
+                    "or infinite values."
+                )
+
             if categories is not None and idx_pos < len(categories):
                 cats = categories[idx_pos]
             else:
-                cats = np.unique(col)
+                try:
+                    cats = np.unique(col)
+                except TypeError:
+                    # Same wording as scikit-learn's encoders, so callers can
+                    # match on it.
+                    types = sorted({type(val).__name__ for val in col})
+                    raise TypeError(
+                        f"Categorical feature {c_idx}: argument must be uniformly "
+                        f"strings or numbers; got values of types {types}."
+                    ) from None
 
             new_categories.append(cats)
             num_levels_list.append(len(cats))
@@ -270,8 +308,10 @@ def _validate_and_split_data(
                     f"cat_weights shape {cat_wgts.shape} does not match number of "
                     f"categorical features ({n_cat})."
                 )
-            if np.any(cat_wgts <= 0):
-                raise ValueError("All cat_weights must be strictly positive.")
+            if not np.all(np.isfinite(cat_wgts)) or np.any(cat_wgts <= 0):
+                raise ValueError(
+                    "All cat_weights must be finite and strictly positive."
+                )
         else:
             cat_wgts = np.ones(n_cat, dtype=np.float64)
     else:
