@@ -196,15 +196,14 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         ]
         for name, m in sizes:
             if m > 1 and self.cat_bandwidth > (m - 1) / m:
-                warnings.warn(
+                msg = (
                     f"cat_bandwidth={self.cat_bandwidth!r} exceeds (m - 1) / m = "
                     f"{(m - 1) / m:.4g}, where m={m} is {name}. Each category's "
                     "smoothed count is then influenced more by each of its "
                     "neighbors than by itself, so this is no longer smoothing. "
-                    "Consider a smaller cat_bandwidth.",
-                    UserWarning,
-                    stacklevel=3,
+                    "Consider a smaller cat_bandwidth."
                 )
+                warnings.warn(msg, UserWarning, stacklevel=3)
                 return
 
     def _validate_init(self, n_con, n_cat, num_levels):
@@ -234,8 +233,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
             expected = (self.n_clusters, n_con)
             if init_means.shape != expected:
                 raise ValueError(
-                    f"init_means must have shape {expected}; got "
-                    f"{init_means.shape}."
+                    f"init_means must have shape {expected}; got {init_means.shape}."
                 )
             if not np.all(np.isfinite(init_means)):
                 raise ValueError("init_means must contain only finite values.")
@@ -244,7 +242,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         if has_log_probs:
             if len(self.init_log_probs) != n_cat:
                 raise ValueError(
-                    f"init_log_probs must contain one matrix per categorical "
+                    "init_log_probs must contain one matrix per categorical "
                     f"feature ({n_cat}); got {len(self.init_log_probs)}."
                 )
             init_log_probs = []

@@ -1,4 +1,7 @@
-"""Regression tests for bugs reported in GitHub issues #16, #17, #19, #20, #22, and #26"""
+"""Regression tests for bugs reported in GitHub issues.
+
+Covers #16, #17, #19, #20, #22, and #26.
+"""
 
 import warnings
 
