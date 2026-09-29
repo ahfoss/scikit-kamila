@@ -845,8 +845,7 @@ def test_parity_predict_small_mixed_out_of_sample():
         actual_preds,
         expected_preds,
         err_msg=(
-            "predict() output does not match R classifyKamila on "
-            "small mixed test set"
+            "predict() output does not match R classifyKamila on small mixed test set"
         ),
     )
 
@@ -893,8 +892,7 @@ def test_parity_predict_medium_mixed_out_of_sample():
         actual_preds,
         expected_preds,
         err_msg=(
-            "predict() output does not match R classifyKamila on "
-            "medium mixed test set"
+            "predict() output does not match R classifyKamila on medium mixed test set"
         ),
     )
 
