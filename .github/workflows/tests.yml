@@ -51,7 +51,7 @@ jobs:
           gcovr --root . --filter src/ --xml coverage-cpp.xml --print-summary
 
       - name: Upload Python coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
@@ -60,7 +60,7 @@ jobs:
 
       - name: Upload C++ coverage to Codecov
         if: matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage-cpp.xml
