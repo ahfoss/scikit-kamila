@@ -22,12 +22,30 @@ pip install kamila
 ## Quick Start
 
 ```python
+import pandas as pd
 from kamila import KamilaClustering
 
-# Initialize the estimator
-kamila = KamilaClustering(n_clusters=2, random_state=42)
-# TODO
+X = pd.DataFrame(
+    {
+        "height": [1.1, 0.9, 1.0, 5.2, 4.8, 5.1],
+        "weight": [2.0, 2.2, 1.9, 8.1, 7.9, 8.3],
+        "color": pd.Categorical(["red", "red", "blue", "green", "green", "blue"]),
+    }
+)
+
+# Columns with a pandas "category" (or bool) dtype are treated as categorical;
+# alternatively pass column indices, names, or a boolean mask.
+kamila = KamilaClustering(n_clusters=2, categorical_features="from_dtype", random_state=42)
+labels = kamila.fit_predict(X)
+
+kamila.cluster_centers_con_  # continuous cluster centers, shape (2, 2)
+kamila.cluster_centers_cat_  # per-feature categorical log-probabilities
+kamila.predict(X.head(2))    # assign new data to the fitted clusters
 ```
+
+`KamilaClustering` follows the scikit-learn estimator API, so it can be used in
+pipelines, cloned, and tuned with `GridSearchCV` (pass an explicit `scoring`, such
+as `"adjusted_rand_score"`, since it does not define a `score` method).
 
 ## Development & Contributing
 

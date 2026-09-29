@@ -1,5 +1,5 @@
 """
-The :mod:`kamila.utils.discovery` module includes utilities to discover
+The :mod:`kamila.utils._discovery` module includes utilities to discover
 objects (i.e. estimators, displays, functions) from the `kamila` package.
 """
 
@@ -54,7 +54,7 @@ def all_estimators(type_filter=None):
 
     Examples
     --------
-    >>> from kamila.utils.discovery import all_estimators
+    >>> from kamila.utils._discovery import all_estimators
     >>> estimators = all_estimators()
     >>> type(estimators)
     <class 'list'>
@@ -134,7 +134,7 @@ def all_displays():
 
     Examples
     --------
-    >>> from kamila.utils.discovery import all_displays
+    >>> from kamila.utils._discovery import all_displays
     >>> displays = all_displays()
     """
     all_classes = []
@@ -183,7 +183,7 @@ def all_functions():
 
     Examples
     --------
-    >>> from kamila.utils.discovery import all_functions
+    >>> from kamila.utils._discovery import all_functions
     >>> functions = all_functions()
     """
     all_functions = []

@@ -16,15 +16,3 @@ Clustering
    :template: class.rst
 
    KamilaClustering
-
-
-Utilities
-=========
-
-.. autosummary::
-   :toctree: generated/
-   :template: function.rst
-
-   utils.discovery.all_estimators
-   utils.discovery.all_displays
-   utils.discovery.all_functions

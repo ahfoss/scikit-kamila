@@ -49,7 +49,7 @@ and categorical data.
         :shadow: md
 
         Detailed descriptions of the ``KamilaClustering`` estimator, its parameters,
-        fitted attributes, methods, and utility discovery functions.
+        fitted attributes, and methods.
 
         +++
 

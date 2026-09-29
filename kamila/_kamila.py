@@ -1,5 +1,8 @@
 """KAMILA: KAy-means for MIxed LArge datasets clustering."""
 
+import numbers
+import warnings
+
 import numpy as np
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils import check_random_state
@@ -7,6 +10,16 @@ from sklearn.utils.validation import _check_feature_names, check_is_fitted
 
 from . import _kamila_cpp
 from ._validation import _validate_and_split_data
+
+
+def _is_int(value):
+    """Return True for integers, excluding bool."""
+    return isinstance(value, numbers.Integral) and not isinstance(value, bool)
+
+
+def _is_real(value):
+    """Return True for real numbers, excluding bool."""
+    return isinstance(value, numbers.Real) and not isinstance(value, bool)
 
 
 class KamilaClustering(ClusterMixin, BaseEstimator):
@@ -37,7 +50,15 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         Maximum number of iterations of the KAMILA algorithm for a single
         run/initialization.
     cat_bandwidth : float, default=0.025
-        Categorical smoothing parameter in [0, 1].
+        Categorical smoothing parameter in [0, 1]. Category counts are smoothed
+        across clusters and then across levels; each count keeps weight
+        ``1 - cat_bandwidth`` and every other cluster (level) receives
+        ``cat_bandwidth / (m - 1)``, where ``m`` is ``n_clusters`` (the number of
+        levels). A ``UserWarning`` is raised during :meth:`fit` if
+        ``cat_bandwidth > (m - 1) / m`` for ``n_clusters`` or any categorical
+        feature's number of levels, because a count would then be influenced
+        more by each neighbor than by itself. Small values (e.g. the default)
+        are recommended.
     con_weights : array-like of shape (n_con,), optional, default=None
         Weights for continuous features. If None, all receive weight 1.0.
     cat_weights : array-like of shape (n_cat,), optional, default=None
@@ -139,7 +160,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
 
     def _validate_parameters(self, n_samples):
         """Validate estimator hyperparameters."""
-        if not isinstance(self.n_clusters, (int, np.integer)) or self.n_clusters < 1:
+        if not _is_int(self.n_clusters) or self.n_clusters < 1:
             raise ValueError(
                 f"n_clusters must be an integer >= 1; got {self.n_clusters!r}."
             )
@@ -147,22 +168,42 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
             raise ValueError(
                 f"n_samples={n_samples} should be >= n_clusters={self.n_clusters}."
             )
-        if not isinstance(self.n_init, (int, np.integer)) or self.n_init < 1:
+        if not _is_int(self.n_init) or self.n_init < 1:
             raise ValueError(f"n_init must be an integer >= 1; got {self.n_init!r}.")
-        if not isinstance(self.max_iter, (int, np.integer)) or self.max_iter < 1:
+        if not _is_int(self.max_iter) or self.max_iter < 1:
             raise ValueError(
                 f"max_iter must be an integer >= 1; got {self.max_iter!r}."
             )
-        if (
-            not isinstance(self.cat_bandwidth, (int, float, np.number))
-            or self.cat_bandwidth < 0
-        ):
+        if not _is_real(self.cat_bandwidth) or not 0 <= self.cat_bandwidth <= 1:
             raise ValueError(
-                "cat_bandwidth must be a non-negative number; got "
+                "cat_bandwidth must be a number in [0, 1]; got "
                 f"{self.cat_bandwidth!r}."
             )
-        if self.cat_bandwidth > 1:
-            raise ValueError(f"cat_bandwidth must be <= 1; got {self.cat_bandwidth!r}.")
+
+    def _check_cat_bandwidth_smoothing(self, num_levels):
+        """Warn if ``cat_bandwidth`` weights neighbors above the cell itself.
+
+        Smoothing across the ``m`` clusters (or ``m`` levels) keeps weight
+        ``1 - cat_bandwidth`` on each cell and gives ``cat_bandwidth / (m - 1)``
+        to every other cell. Beyond ``(m - 1) / m`` a cell is more influenced by
+        each neighbor than by itself, so the update is no longer smoothing.
+        """
+        sizes = [("n_clusters", int(self.n_clusters))]
+        sizes += [
+            (f"the number of levels of categorical feature {q}", int(n_lev))
+            for q, n_lev in enumerate(num_levels)
+        ]
+        for name, m in sizes:
+            if m > 1 and self.cat_bandwidth > (m - 1) / m:
+                msg = (
+                    f"cat_bandwidth={self.cat_bandwidth!r} exceeds (m - 1) / m = "
+                    f"{(m - 1) / m:.4g}, where m={m} is {name}. Each category's "
+                    "smoothed count is then influenced more by each of its "
+                    "neighbors than by itself, so this is no longer smoothing. "
+                    "Consider a smaller cat_bandwidth."
+                )
+                warnings.warn(msg, UserWarning, stacklevel=3)
+                return
 
     def _validate_init(self, n_con, n_cat, num_levels):
         """Validate explicit initializations against the data.
@@ -191,8 +232,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
             expected = (self.n_clusters, n_con)
             if init_means.shape != expected:
                 raise ValueError(
-                    f"init_means must have shape {expected}; got "
-                    f"{init_means.shape}."
+                    f"init_means must have shape {expected}; got {init_means.shape}."
                 )
             if not np.all(np.isfinite(init_means)):
                 raise ValueError("init_means must contain only finite values.")
@@ -201,7 +241,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         if has_log_probs:
             if len(self.init_log_probs) != n_cat:
                 raise ValueError(
-                    f"init_log_probs must contain one matrix per categorical "
+                    "init_log_probs must contain one matrix per categorical "
                     f"feature ({n_cat}); got {len(self.init_log_probs)}."
                 )
             init_log_probs = []
@@ -261,6 +301,8 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
 
         self._validate_parameters(n_samples)
         init_means_arr, init_lp_list = self._validate_init(n_con, n_cat, num_levels)
+        if n_cat > 0:
+            self._check_cat_bandwidth_smoothing(num_levels)
 
         self.n_features_in_ = n_features
         _check_feature_names(self, X, reset=True)
@@ -459,5 +501,13 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
         tags.input_tags.sparse = False
+        tags.input_tags.categorical = self.categorical_features is not None
         tags.array_api_support = False
         return tags
+
+    def _more_tags(self):
+        # Tags for scikit-learn < 1.6, which ignores __sklearn_tags__.
+        X_types = ["2darray"]
+        if self.categorical_features is not None:
+            X_types.append("categorical")
+        return {"X_types": X_types}
