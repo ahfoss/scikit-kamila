@@ -6,17 +6,10 @@ import warnings
 import numpy as np
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils import check_random_state
-from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.validation import _check_feature_names, check_is_fitted
 
 from . import _kamila_cpp
 from ._validation import _validate_and_split_data
-
-try:
-    from sklearn.utils.validation import _check_feature_names
-except ImportError:  # pragma: no cover  (scikit-learn < 1.6)
-
-    def _check_feature_names(estimator, X, *, reset):
-        return estimator._check_feature_names(X, reset=reset)
 
 
 def _is_int(value):

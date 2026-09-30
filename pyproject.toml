@@ -15,7 +15,7 @@ requires-python = ">=3.9"
 dependencies = [
   "numpy>=1.22",
   "scipy>=1.8",
-  "scikit-learn>=1.4.2",
+  "scikit-learn>=1.6,<1.10",
   "joblib>=1.2",
 ]
 
@@ -100,7 +100,7 @@ platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 
 [tool.pixi.dependencies]
 python = ">=3.9"
-scikit-learn = ">=1.4.2"
+scikit-learn = ">=1.6,<1.10"
 
 [tool.pixi.pypi-dependencies]
 kamila = { path=".", editable=true }
@@ -202,6 +202,9 @@ filterwarnings = [
     "ignore::coverage.exceptions.CoverageWarning",
     "ignore:.*'oneOf' deprecated.*:DeprecationWarning",
     "ignore:.*'oneOf' deprecated.*:FutureWarning",
+    # scikit-learn 1.6's parametrize_with_checks passes a generator to
+    # pytest.mark.parametrize, which pytest >= 9 deprecates.
+    "ignore:Passing a non-Collection iterable to parametrize",
 ]
 
 [tool.coverage.run]

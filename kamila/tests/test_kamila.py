@@ -529,9 +529,10 @@ def test_validation_errors():
         _validate_and_split_data(np.array([[1.0 + 2.0j, 3.0]]))
 
     # Estimator tags
-    kam_tags = KamilaClustering()
-    assert isinstance(kam_tags._more_tags(), dict)
-    assert hasattr(kam_tags, "__sklearn_tags__")
+    kam_tags = KamilaClustering().__sklearn_tags__()
+    assert kam_tags.input_tags.sparse is False
+    assert kam_tags.input_tags.allow_nan is False
+    assert kam_tags.array_api_support is False
 
     # NaN / Inf in continuous
     with pytest.raises(ValueError, match="Continuous features contain NaN or infinite"):
