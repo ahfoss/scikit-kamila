@@ -1,6 +1,9 @@
 import pytest
 import sklearn
-from sklearn.utils.estimator_checks import _get_check_estimator_ids
+from sklearn.utils.estimator_checks import (
+    _get_check_estimator_ids,
+    estimator_checks_generator,
+)
 from sklearn.utils.fixes import parse_version
 
 from kamila import KamilaClustering
@@ -19,7 +22,7 @@ _estimators = [est_cls() for _, est_cls in all_estimators()] + [
 def _expected_failed_checks(estimator):
     """Checks that fail because of bugs in scikit-learn itself."""
     if (  # pragma: no cover
-        parse_version("1.6") <= _SKLEARN_VERSION < parse_version("1.7.1")
+        _SKLEARN_VERSION < parse_version("1.7.1")
         and estimator.categorical_features is not None
     ):
         return {
@@ -31,22 +34,13 @@ def _expected_failed_checks(estimator):
     return {}
 
 
-try:  # scikit-learn >= 1.6
-    from sklearn.utils.estimator_checks import estimator_checks_generator
-
-    def _checks(estimator):
-        return estimator_checks_generator(
-            estimator,
-            legacy=True,
-            expected_failed_checks=_expected_failed_checks(estimator),
-            mark="xfail",
-        )
-
-except ImportError:  # pragma: no cover  (scikit-learn < 1.6)
-    from sklearn.utils.estimator_checks import check_estimator
-
-    def _checks(estimator):
-        return check_estimator(estimator, generate_only=True)
+def _checks(estimator):
+    return estimator_checks_generator(
+        estimator,
+        legacy=True,
+        expected_failed_checks=_expected_failed_checks(estimator),
+        mark="xfail",
+    )
 
 
 # Build a list rather than using parametrize_with_checks: on some scikit-learn
