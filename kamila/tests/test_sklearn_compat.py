@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+from sklearn.utils import get_tags
 
 from kamila import KamilaClustering
 from kamila._validation import _validate_and_split_data
@@ -76,16 +77,5 @@ def test_invalid_hyperparameters(params, match):
 
 
 def test_categorical_tag_follows_categorical_features():
-    sklearn_utils = pytest.importorskip("sklearn.utils")
-    get_tags = getattr(sklearn_utils, "get_tags", None)
-    if get_tags is None:  # pragma: no cover  (scikit-learn < 1.6)
-        pytest.skip("get_tags requires scikit-learn >= 1.6")
     assert not get_tags(KamilaClustering()).input_tags.categorical
     assert get_tags(KamilaClustering(categorical_features=[0])).input_tags.categorical
-
-
-def test_legacy_more_tags():
-    assert KamilaClustering()._more_tags() == {"X_types": ["2darray"]}
-    assert KamilaClustering(categorical_features="from_dtype")._more_tags() == {
-        "X_types": ["2darray", "categorical"]
-    }

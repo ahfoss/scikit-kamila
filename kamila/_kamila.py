@@ -504,10 +504,3 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         tags.input_tags.categorical = self.categorical_features is not None
         tags.array_api_support = False
         return tags
-
-    def _more_tags(self):
-        # Tags for scikit-learn < 1.6, which ignores __sklearn_tags__.
-        X_types = ["2darray"]
-        if self.categorical_features is not None:
-            X_types.append("categorical")
-        return {"X_types": X_types}
