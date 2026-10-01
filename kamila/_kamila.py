@@ -43,7 +43,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         - array-like of bool: boolean mask of shape (n_features,).
     n_init : int, default=10
         Number of times the algorithm will be run with different centroid seeds.
-        The final results will be the best output of n_init runs in terms of objective.
+        The run with the highest objective (``inertia_``) is kept.
         Ignored when ``init_means`` or ``init_log_probs`` is given; a single run
         from that initialization is performed instead.
     max_iter : int, default=25
@@ -90,9 +90,10 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         is the opposite of scikit-learn's ``KMeans.inertia_``). For continuous-only
         data it equals ``total_log_lik_``; for categorical-only data it equals
         ``cat_log_lik_``; for mixed data it is the heuristic
-        ``win_dist_ / (total_dist_ - win_dist_) * cat_log_lik_`` (the ratio falls
-        back to 100 when it is undefined or negative), which is not a
-        likelihood.
+        ``win_dist_ / (total_dist_ - win_dist_) * cat_log_lik_``, which is not a
+        likelihood. In the mixed case the ratio is replaced by 100 when
+        ``total_dist_ - win_dist_ <= 1e-12`` or the ratio is negative or not
+        finite, and the objective is 0.0 when ``cat_log_lik_`` is exactly 0.
     n_iter_ : int
         Number of iterations run in the best initialization.
     n_features_in_ : int
@@ -117,13 +118,19 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
     win_dist_ : float or None
         Sum over training samples of the weighted Euclidean distance to the
         continuous center of the assigned cluster, measured with the centers
-        from the start of the final iteration. None if no continuous features.
+        from the start of the final iteration (before the last center update).
+        None if no continuous features.
     total_dist_ : float
         Sum over training samples of the weighted Euclidean distance to the mean
-        of the continuous features. 0.0 if no continuous features.
+        of the continuous features. It does not depend on the clustering and is
+        not an objective. 0.0 (not None) if no continuous features.
     fitted_min_dist_ : ndarray of shape (n_samples,) or None
-        Minimum continuous distance from each training observation to fitted
-        cluster centers.
+        Weighted Euclidean distance from each training sample to the nearest
+        center in ``cluster_centers_con_`` (the centers after the last update).
+        Its sum can differ from ``win_dist_``, which uses the assigned (not
+        necessarily nearest) cluster and the centers from before the last update;
+        the two sets of centers differ when fitting stopped at ``max_iter``
+        without converging. None if no continuous features.
 
     Notes
     -----
