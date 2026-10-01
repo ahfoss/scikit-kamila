@@ -78,3 +78,6 @@ target/
 
 # auto-generated files
 kamila/_version.py
+
+# Worktrees
+.claude/
