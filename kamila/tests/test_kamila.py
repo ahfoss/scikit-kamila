@@ -354,7 +354,10 @@ def test_kamila_random_init_and_reproducibility():
     labels2 = kam2.fit_predict(X)
 
     np.testing.assert_array_equal(labels1, labels2)
-    assert kam1.inertia_ == pytest.approx(kam2.inertia_)
+    assert kam1.n_iter_ == kam2.n_iter_
+    np.testing.assert_allclose(kam1.cluster_centers_con_, kam2.cluster_centers_con_)
+    for lp1, lp2 in zip(kam1.cluster_centers_cat_, kam2.cluster_centers_cat_):
+        np.testing.assert_allclose(lp1, lp2)
 
 
 def test_kamila_random_init_single_modalities():

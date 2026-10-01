@@ -134,7 +134,7 @@ def test_categorical_only_empty_clusters_are_reinitialized():
     km = KamilaClustering(5, categorical_features=[0], n_init=10, random_state=0).fit(X)
 
     np.testing.assert_array_equal(np.unique(km.labels_), [0, 1, 2, 3, 4])
-    assert np.isfinite(km.inertia_)
+    assert np.isfinite(km.cat_log_lik_)
 
 
 # =============================================================================
