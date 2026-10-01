@@ -574,6 +574,14 @@ KamilaResult kamila_loop(
     }
 
     // Objective value calculation matching R
+    /*
+     * Example:
+     * | W/(T-W) | cat_log_lik | product | note                                            |
+     * | 10      | -5          | -50     | baseline                                        |
+     * |  2      | -5          | -10     | improvement in continuous relative to baseline. |
+     * | 10      | -1          | -10     | improvement in cat_log_lik rel. to baseline.    |
+     * |  2      | -1          | - 2     | improvement in both.
+     */
     double objective = 0.0;
     if (has_con && has_cat) {
         double denom = total_dist - win_dist;
