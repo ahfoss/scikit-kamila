@@ -106,10 +106,10 @@ scikit-learn = ">=1.6,<1.10"
 kamila = { path=".", editable=true }
 
 [tool.pixi.feature.lint.dependencies]
-# The version below should be aligned with the one of `.pre-commit-config.yaml`
-black = "23.3.0"
-pre-commit = "3.7.1"
-ruff = "0.4.2"
+# Keep these aligned with the `lint` extra, which is what CI's lint job uses.
+black = ">=23.3.0"
+pre-commit = ">=3.0"
+ruff = ">=0.4.0"
 
 [tool.pixi.feature.lint.tasks]
 black = { cmd = "black --check --diff kamila && black --check --diff examples" }
