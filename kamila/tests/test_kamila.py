@@ -323,6 +323,84 @@ def test_parity_categorical_only():
     np.testing.assert_array_equal(preds, kam_conv.labels_)
 
 
+@pytest.mark.parametrize(
+    "fixture",
+    [
+        "reference_small_mixed.json",
+        "reference_medium_mixed.json",
+        "reference_continuous_only.json",
+        "reference_categorical_only.json",
+    ],
+)
+def test_parity_objective(fixture):
+    """Verify objective_ matches the R objective formula applied to the R
+    reference components (total_log_lik, cat_log_lik, win_dist)."""
+    data = load_fixture(fixture)
+    blocks, init = [], {}
+    if data["n_con"] > 0:
+        blocks.append(np.asarray(data["con_data"], dtype=np.float64))
+        init["init_means"] = np.asarray(data["init_means"], dtype=np.float64)
+        init["con_weights"] = data["con_weights"]
+    if data["n_cat"] > 0:
+        blocks.append(np.asarray(data["cat_data"], dtype=np.int32))
+        init["init_log_probs"] = [
+            np.asarray(lp, dtype=np.float64) for lp in data["init_log_probs"]
+        ]
+        init["cat_weights"] = data["cat_weights"]
+        init["cat_bandwidth"] = data["cat_bw"]
+        init["categorical_features"] = [False] * data["n_con"] + [True] * data["n_cat"]
+    X = np.hstack(blocks)
+
+    kam = KamilaClustering(n_clusters=data["num_clust"], **init).fit(X)
+
+    expected = data["converged"]
+    if data["n_con"] > 0 and data["n_cat"] > 0:
+        # R does not record total_dist; it depends only on the data and weights.
+        ratio = expected["win_dist"] / (kam.total_dist_ - expected["win_dist"])
+        expected_obj = ratio * expected["cat_log_lik"]
+    elif data["n_con"] > 0:
+        expected_obj = expected["total_log_lik"]
+    else:
+        expected_obj = expected["cat_log_lik"]
+    assert isinstance(kam.objective_, float)
+    assert kam.objective_ == pytest.approx(expected_obj, rel=1e-7)
+
+
+def test_objective_selects_best_restart(monkeypatch):
+    """Verify fit keeps the restart with the highest objective and reports it
+    as objective_."""
+    import kamila._kamila as kamila_module
+
+    objectives = []
+    real_loop = _kamila_cpp.kamila_loop_cpp
+
+    def recording_loop(**kwargs):
+        res = real_loop(**kwargs)
+        objectives.append(res["objective"])
+        return res
+
+    monkeypatch.setattr(
+        kamila_module,
+        "_kamila_cpp",
+        type("FakeCpp", (), {"kamila_loop_cpp": staticmethod(recording_loop)}),
+    )
+
+    rng = np.random.default_rng(0)
+    X = np.hstack(
+        [
+            np.vstack([rng.normal(0, 1, (30, 2)), rng.normal(4, 1, (30, 2))]),
+            rng.integers(0, 3, (60, 2)),
+        ]
+    )
+    kam = KamilaClustering(
+        n_clusters=3, categorical_features=[2, 3], n_init=8, random_state=0
+    ).fit(X)
+
+    assert len(objectives) == 8
+    assert len(set(objectives)) > 1
+    assert kam.objective_ == max(objectives)
+
+
 # =============================================================================
 # Additional Functionality and Edge Cases
 # =============================================================================
@@ -355,6 +433,7 @@ def test_kamila_random_init_and_reproducibility():
 
     np.testing.assert_array_equal(labels1, labels2)
     assert kam1.n_iter_ == kam2.n_iter_
+    assert kam1.objective_ == kam2.objective_
     np.testing.assert_allclose(kam1.cluster_centers_con_, kam2.cluster_centers_con_)
     for lp1, lp2 in zip(kam1.cluster_centers_cat_, kam2.cluster_centers_cat_):
         np.testing.assert_allclose(lp1, lp2)

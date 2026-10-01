@@ -105,8 +105,8 @@ Key Hyperparameters
 * ``categorical_features`` (*None, 'from_dtype', or array-like*, default=None):
   Specification of categorical columns.
 * ``n_init`` (*int*, default=10):
-  Number of random initializations. The run with the highest objective value is
-  retained.
+  Number of random initializations. The run with the highest objective value
+  (``objective_``) is retained.
 * ``max_iter`` (*int*, default=25):
   Maximum number of iterations allowed per initialization.
 * ``cat_bandwidth`` (*float*, default=0.025):
@@ -130,6 +130,7 @@ attributes:
 * ``cluster_centers_cat_``: List of log-probability matrices for each categorical feature
   (or ``None`` if no categorical features).
 * ``labels_``: Cluster label for each sample in the training data of shape ``(n_samples,)``.
+* ``objective_``: Objective value of the winning initialization (higher is better).
 * ``n_iter_``: Number of iterations taken by the winning initialization.
 * ``n_features_in_``: Total number of features seen during :meth:`fit`.
 * ``feature_names_in_``: Names of features seen during :meth:`fit` (if provided).

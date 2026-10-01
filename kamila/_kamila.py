@@ -85,6 +85,15 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         None if no categorical features are present.
     labels_ : ndarray of shape (n_samples,)
         Labels of each point in the training set.
+    objective_ : float
+        Objective value of the selected initialization; of the ``n_init`` runs,
+        the one with the highest objective is kept. Higher is better (the
+        opposite of scikit-learn's ``KMeans.inertia_``). For continuous-only data
+        it equals ``total_log_lik_``. For categorical-only data it equals
+        ``cat_log_lik_``, or ``-inf`` if the solution was degenerate. For mixed
+        data it is the heuristic ``win_dist_ / (total_dist_ - win_dist_) *
+        cat_log_lik_`` (the ratio falls back to 100 when it is undefined or
+        negative), which is not a likelihood.
     n_iter_ : int
         Number of iterations run in the best initialization.
     n_features_in_ : int
@@ -380,6 +389,7 @@ class KamilaClustering(ClusterMixin, BaseEstimator):
         # Unpack best result
         self.labels_ = np.asarray(best_res["final_membership"], dtype=np.int32)
         self.n_iter_ = int(best_res["num_iter"])
+        self.objective_ = float(best_res["objective"])
         self.win_dist_ = float(best_res["win_dist"]) if n_con > 0 else None
         self.total_dist_ = float(best_res["total_dist"])
         self.total_log_lik_ = float(best_res["total_log_lik"]) if n_con > 0 else None
